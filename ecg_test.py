@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import cv2
 import matplotlib.pylab as plt
+import time
 from tkinter import *
 from glob import glob
  
@@ -41,6 +42,37 @@ def newWindow():
     axs[0].axis("off")
     axs[1].axis("off")
     plt.show()
+
+    xinc = 5
+    yinc = 0
+    create_canvas_animation = canvas_animation(window)
+    ecg_signal_animation(window, create_canvas_animation, xinc,yinc)
+
+
+def canvas_animation(window):
+     # creating start line
+    C = Canvas(window, bg="black", width=800, height=200)
+    line = C.create_line(0, 100, 800,100 , fill= "#76EE00", width=2)
+    C.pack(fill="both", expand=True)
+    return C
+
+def ecg_signal_animation(window, C, xinc, yinc):
+    signal = C.create_line(0, 100, 10, 100, fill= "black", width=2)
+    # loop
+    while True:
+        C.move(signal, xinc,yinc)
+        window.update()
+        time.sleep(0.01)
+        signal_pos = C.coords(signal)
+        xl,yl,xr,yr = signal_pos
+    
+        if xl < abs(xinc) or xr == 800-abs(xinc):
+            xl,yl,xr,yr = 0
+            #signal_pos = C.coords(signal)
+        print(signal_pos)
+        
+
+
   
 options = [ 
     "Normal Sinus Rhythms",
@@ -68,4 +100,6 @@ button = Button( root , text = " Start " , command = newWindow ).pack()
   
   
 root.mainloop()
+
+
 
