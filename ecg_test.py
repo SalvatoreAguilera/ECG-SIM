@@ -65,9 +65,11 @@ def ecg_signal_animation(window, C, xinc, yinc):
         time.sleep(0.01)
         signal_pos = C.coords(signal)
         xl,yl,xr,yr = signal_pos
-    
-        if xl < abs(xinc) or xr == 800-abs(xinc):
-            xl,yl,xr,yr = 0
+        if xl < abs(xinc) or xr >= 800-abs(xinc):
+            xl,yl,xr,yr = 0,0,0,0
+            C.delete(signal)
+            signal = C.create_line(0, 100, 10, 100, fill= "black", width=2)
+                
             #signal_pos = C.coords(signal)
         print(signal_pos)
         
