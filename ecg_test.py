@@ -72,11 +72,6 @@ def ecg_signal_animation(window, C, xinc, yinc):
             C.delete(signal)
             signal = C.create_line(0, 100, 10, 100, fill= "black", width=2)
                 
-            #signal_pos = C.coords(signal)
-        print(signal_pos)
-        
-
-
   
 options = [ 
     "Normal Sinus Rhythms",
