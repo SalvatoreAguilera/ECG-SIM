@@ -5,7 +5,7 @@ import matplotlib.pylab as plt
 import time
 from tkinter import *
 from glob import glob
- 
+import coor
 root = Tk() 
   
 root.geometry( "300x300" ) 
@@ -59,6 +59,8 @@ def canvas_animation(window):
 def ecg_signal_animation(window, C, xinc, yinc):
     signal = C.create_line(0, 100, 10, 100, fill= "black", width=2)
     # loop
+    index = 0
+    
     while True:
         C.move(signal, xinc,yinc)
         window.update()
