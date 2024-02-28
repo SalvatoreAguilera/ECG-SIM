@@ -7,7 +7,7 @@ root.geometry( "300x300" )
   
 def newWindow(): 
     window = Tk()
-    window.geometry( "800x200" )
+    window.geometry( "1000x1000" )
     window.title( clicked.get() )
     window.configure( background='black' )
   

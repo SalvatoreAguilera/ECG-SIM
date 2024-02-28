@@ -2,7 +2,7 @@ import cv2
 import pandas as pd
 import numpy as np
 
-image = cv2.imread("normal-.jpeg")
+image = cv2.imread("atrial.png")
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 # Set threshold level
@@ -19,5 +19,8 @@ mask = gray < threshold_level
 # Color the pixels in the mask
 image[mask] = (204, 119, 0)
 
-#cv2.imshow('image', image)
-#cv2.waitKey()
+cv2.imshow('image', image)
+cv2.waitKey()
+
+def main():
+    window 
