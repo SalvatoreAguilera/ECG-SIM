@@ -92,7 +92,7 @@ def fourier():
     #R_an +=  Q_an + S_an  
     R_a0 +=  T_a0 + S_a0 + P_a0
     
-    x = np.arange(-2000, 2000, 1)
+    x = np.arange(-10000, 10000, 1)
     
     y = np.zeros(len(x))
     for j in range (len(x)):
