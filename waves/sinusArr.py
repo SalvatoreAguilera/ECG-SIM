@@ -1,6 +1,7 @@
 
 import numpy as np
 from scipy.integrate import quad
+import random
 
 def r_wave(n,b,amp, p1,p2):
     period = abs(p1)+abs(p2)
@@ -11,14 +12,14 @@ def r_wave(n,b,amp, p1,p2):
     R_a0, _ = quad(a0, 0, p2)
     c = 1
     R1_a0, _ = quad(a0,p1,0)
-    R_a0 = 1/500*(R_a0+R1_a0)
+    R_a0 = 1/800*(R_a0+R1_a0)
     
     
     
     def aN(low, high):
         arr = np.zeros((n))
         for i in range(1,n+1):
-            f = lambda x : (a0(x))*np.cos((i*np.pi*x)/500)
+            f = lambda x : (a0(x))*np.cos((i*np.pi*x)/800)
             arr[i-1], _ = quad(f, low, high)
         return arr
     
@@ -27,7 +28,7 @@ def r_wave(n,b,amp, p1,p2):
     c = -1
     R1_an = []
     R1_an = aN(0, p2)
-    a_N = 1/500*(R_an+R1_an)
+    a_N = 1/800*(R_an+R1_an)
     return a_N, R_a0
 
 def s_wave(n, b, amp, period, p1, p2, c2):
@@ -37,14 +38,14 @@ def s_wave(n, b, amp, period, p1, p2, c2):
       
     R_a0, _ = quad(f1 ,20, 30)#p1, (p2/2)+(p1/2))
     R1_a0, _ = quad(f2 , 30, 40)#(p2/2)+(p1/2),p2)
-    R_a0 = (1/500)*(R_a0+R1_a0)
+    R_a0 = (1/800)*(R_a0+R1_a0)
     
     
     
     def aN(low, high, f):
         arr = np.zeros((n))
         for i in range(1,n+1):
-            f3 = lambda x : (f(x))*np.cos((i*np.pi*x)/500)
+            f3 = lambda x : (f(x))*np.cos((i*np.pi*x)/800)
             arr[i-1], _ = quad(f3, low, high)
         return arr
     
@@ -52,7 +53,7 @@ def s_wave(n, b, amp, period, p1, p2, c2):
     R_an = aN(30,40, f2)#(p2/2)+(p1/2),p2)
 
     
-    a_N = (1/500)*(R_an+R1_an)
+    a_N = (1/800)*(R_an+R1_an)
     return a_N, R_a0
     
 
@@ -65,25 +66,25 @@ def T_wave(n, low, high, amp, c1):
     def aN():
         arr = np.zeros((n))
         for i in range(1,n+1):
-            f = lambda x : (-9.375e-5 * ((x + c1)**2) + amp)*(np.cos((i*np.pi*x)/(500)))
+            f = lambda x : (-9.375e-5 * ((x + c1)**2) + amp)*(np.cos((i*np.pi*x)/(800)))
             arr[i-1], _ = quad(f, a=low, b=high)
         return arr
     
     def bN():
         arr = np.zeros(n)
         for i in range(1, n + 1):
-            f = lambda x: (-(9.375e-5 * (x + c1)**2) + amp) * np.sin((i * np.pi * x) / 500)
+            f = lambda x: (-(9.375e-5 * (x + c1)**2) + amp) * np.sin((i * np.pi * x) / 800)
             arr[i - 1], _ = quad(f, low, high)
         return arr
-    T_a0 = T_a0 * (1/500)
-    T_aN = aN()*(1/500)
-    T_bN = bN()*(1/500)
+    T_a0 = T_a0 * (1/800)
+    T_aN = aN()*(1/800)
+    T_bN = bN()*(1/800)
     return T_aN, T_a0, T_bN
 
 
 def fourier():
     #R-WAVE
-    n, b, amp, p1, p2 = 60, 2, 2.5, -20, 20
+    n, b, amp, p1, p2 = 40, 2, 2.5, -20, 20
     R_an, R_a0 = r_wave(n,b,amp, p1,p2)
     #Q_an, Q_a0 = coefficients(n, b, amp, 20, 40, -60)
     S_an, S_a0 = s_wave(n, b, amp, abs(p1)+abs(p2), 20, 40, -60)
@@ -92,15 +93,20 @@ def fourier():
     #R_an +=  Q_an + S_an  
     R_a0 +=  T_a0 + S_a0 + P_a0
     
-    x = np.arange(-10000, 10000, 1)
-    
+    x = np.arange(-5000, 5000, 1)
+    ran = random.uniform(1, 1.2)
+    p = 500
+    prev = 0
     y = np.zeros(len(x))
     for j in range (len(x)):
+        if x[j] % (p+prev) == 0:
+            prev += p
+            p = random.randint(400,600)
         for i in range(1,n+1):
-            y[j] +=  (np.cos((np.pi*i*x[j])/500) * T_an[i-1]) + (np.sin((np.pi*i*x[j])/500) * T_bn[i-1])
-            y[j] +=  (np.cos((np.pi*i*x[j])/500) * R_an[i-1])
-            y[j] +=  (np.cos((np.pi*i*x[j])/500) * S_an[i-1])
-            y[j] +=  (np.cos((np.pi*i*x[j])/500) * P_an[i-1]) + (np.sin((np.pi*i*x[j])/500) * P_bn[i-1])
+            y[j] +=  (np.cos((np.pi*i*x[j])/p) * T_an[i-1]) + (np.sin((np.pi*i*x[j])/p) * T_bn[i-1])
+            y[j] +=  (np.cos((np.pi*i*x[j])/p) * R_an[i-1])
+            y[j] +=  (np.cos((np.pi*i*x[j])/p) * S_an[i-1])
+            y[j] +=  (np.cos((np.pi*i*x[j])/p) * P_an[i-1]) + (np.sin((np.pi*i*x[j])/p) * P_bn[i-1])
         y[j] += (R_a0/2)
     return x, y
 
