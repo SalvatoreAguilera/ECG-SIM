@@ -182,7 +182,7 @@ def animation(window,ecg_num):
     btm2_frame.pack()
     btm3_frame = tk.LabelFrame(window,bg="black", foreground="#99f20f",text="V1",bd=0, height=250, width=500)
     btm3_frame.pack()
-    
+    queue_anim = 0
     if(clicked.get() == 'Normal Rhythm'):
         t = np.linspace(-2,2,1200)
         y = normal.normal()
@@ -201,16 +201,22 @@ def animation(window,ecg_num):
     else:
         t = np.linspace(-2,2,1200)
         y = normal.update_ecg()
-        print("else")    
-    #get_new_parameters(parameters)
+         
+    get_new_parameters(parameters)
     
     # create figure 
     fig1, axis = plt.subplots(figsize=(7,2),facecolor="black")                   # background of fig black
     fig2, axis2 = plt.subplots(figsize=(7,2),facecolor="black")
+    
     # function for Funcanimation 
     def update(frame):
-    # update the new points after each frame
+        nonlocal queue_anim
+        # update the new points after each frame
         animated_plot.set_data(t[:frame], y[:frame])
+        if(frame == len(t)-1 and queue_anim > 0):
+            queue_anim -= 1
+            
+        
         return animated_plot
     
     axis.set_xlim([min(t),max(t)])                                # set the limits of time for x
@@ -261,16 +267,14 @@ def animation(window,ecg_num):
 
     #stop animation and update 
     def on_click_update():
-        nonlocal hr
-        #animate.event_source.stop()
-        axis.set_xlim([min(t),max(t)])                                # set the limits of time for x
-        axis.set_ylim([min(y),max(y)])                                         # Set limit for amplitude for y 
-        plt.xticks(np.arange(min(t), max(t)+1, 0.25))
-        plt.yticks(np.arange(min(y)-1,max(y), 0.25)) 
-        animated_plot, = axis.plot([],[],color="#84f91c")
-        FuncAnimation(fig= fig1, func= update,frames=len(t),interval=10, repeat="False")
-        hr = normal.get_HR()
+        global y
+        nonlocal hr, queue_anim
+        queue_anim += 1
+        y = normal.update_ecg()
+        hr= normal.get_HR()
         update_rate()
+        
+        
 
     # buttom frame
     def on_click_exit():
