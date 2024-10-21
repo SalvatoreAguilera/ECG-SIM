@@ -99,37 +99,118 @@ params = {
     'q': {'a': 0.025,   'd': 0.066, 't': 0.166},          #DO NOT CHANGE THE AMPLITUDED OF Q WAVE
     'r': {'a': 1.6,     'd': 0.11,   't': 0.4},
     's': {'a': 0.25,   'd': 0.066, 't': 0.09},
-    't': {'a': .35,     'd': 0.142, 't': 0.2},         #DO NOT CHANGE THE AMPLITUDE OF T WAVE
-    'u': {'a': 0.035,   'd': 0.0476, 't': 0.433}
+    't': {'a': .35,     'd': 0.142, 't': 0.2}         #DO NOT CHANGE THE AMPLITUDE OF T WAVE
+    #'u': {'a': 0.035,   'd': 0.0476, 't': 0.433}
 }
 
 li = 30/72  # Length of the interval (1 second)
-time = np.linspace(-2, 2, 1200)  
+time = np.linspace(-1, 1, 1000)  
 
 p_wave = p_wav(time, params['p']['a'], params['p']['d'], params['p']['t'], li)
 q_wave = q_wav(time, params['q']['a'], params['q']['d'], params['q']['t'], li)
 r_wave = qrs_wav(time, params['r']['a'], params['r']['d'], li)
 s_wave = s_wav(time, params['s']['a'], params['s']['d'], params['s']['t'], li)
 t_wave = t_wav(time, params['t']['a'], params['t']['d'], params['t']['t'], li)
-u_wave = u_wav(time, params['u']['a'], params['u']['d'], params['u']['t'], li)
+#u_wave = u_wav(time, params['u']['a'], params['u']['d'], params['u']['t'], li)
 
 
-ecg_waveform = p_wave + q_wave + r_wave + s_wave + t_wave + u_wave
+ecg_waveform = []
 
-# check for heartrate
-max_y = np.max(ecg_waveform)
-print(max_y)
-index = []
+#Updated code to a function
+#Previous code: ecg_waveform = p_wave + q_wave + r_wave + s_wave + t_wave + u_wave
+#function to call to update ecg live
+def update_ecg():
+    global ecg_waveform  
+    time = np.linspace(-2, 2, 1200)  
+    p_wave = p_wav(time, params['p']['a'], params['p']['d'], params['p']['t'], li)
+    q_wave = q_wav(time, params['q']['a'], params['q']['d'], params['q']['t'], li)
+    r_wave = qrs_wav(time, params['r']['a'], params['r']['d'], li)
+    s_wave = s_wav(time, params['s']['a'], params['s']['d'], params['s']['t'], li)
+    t_wave = t_wav(time, params['t']['a'], params['t']['d'], params['t']['t'], li)
+    #u_wave = u_wav(time, params['u']['a'], params['u']['d'], params['u']['t'], li)
+    ecg_waveform = p_wave + q_wave + r_wave + s_wave + t_wave #+ u_wave
+    
+    return ecg_waveform
 
-for i in range(len(ecg_waveform)):
-    if (ecg_waveform[i] >= max_y-.01):
-        index.append(i)
 
-print(index)
+#updated code to a function
+#reason: to change the haeart when the person inputs different params
+def get_HR():
+    max_y = np.max(ecg_waveform)
+    index = []
 
-# HR
-Hr = 300 / ((index[3]-index[2])/50)
+    for i in range(len(ecg_waveform)):
+        if (ecg_waveform[i] >= max_y-.01):
+            index.append(i)
+
+    Hr = 300 / ((index[3]-index[2])/50)
+    return Hr
 
 
+def normal():
+    global params, li
+    params = {
+        'p': {'a': 0.25,    'd': 0.09,  't': 0.16},
+        'q': {'a': 0.025,   'd': 0.066, 't': 0.166},          
+        'r': {'a': 1.6,     'd': 0.11,   't': 0.4},
+        's': {'a': 0.25,   'd': 0.066, 't': 0.09},
+        't': {'a': .35,     'd': 0.142, 't': 0.2}         
+        #'u': {'a': 0.035,   'd': 0.0476, 't': 0.433}
+    }
+    
+    li = 30/72
+    return update_ecg()
 
+def sinus_arrythmia():
+    global params, li
+    params = {
+        'p': {'a': 0.25, 'd': 0.09, 't': 0.18},
+        'q': {'a': 0.025, 'd': 0.066, 't': 0.17},
+        'r': {'a': 1.6, 'd': 0.11, 't': 0.42},
+        's': {'a': 0.25, 'd': 0.066, 't': 0.10},
+        't': {'a': 0.35, 'd': 0.142, 't': 0.22},
+        # 'u': {'a': 0.035, 'd': 0.0476, 't': 0.433}
+    }
+    li = 30/72
+    return update_ecg()
+    
+def sinus_brady():
+    global params, li
+    params = {
+        'p': {'a': 0.25, 'd': 0.09, 't': 0.25},
+        'q': {'a': 0.025, 'd': 0.066, 't': 0.20},
+        'r': {'a': 1.6, 'd': 0.11, 't': 0.50},
+        's': {'a': 0.25, 'd': 0.066, 't': 0.12},
+        't': {'a': 0.35, 'd': 0.142, 't': 0.30},
+        # 'u': {'a': 0.035, 'd': 0.0476, 't': 0.433}
+    } 
+    li = 30/72
+    return update_ecg()
+    
+def sinus_tachy():
+    global params, li
+    params = {
+        'p': {'a': 0.25, 'd': 0.09, 't': 0.12},
+        'q': {'a': 0.025, 'd': 0.066, 't': 0.10},
+        'r': {'a': 1.6, 'd': 0.11, 't': 0.25},
+        's': {'a': 0.25, 'd': 0.066, 't': 0.08},
+        't': {'a': 0.35, 'd': 0.142, 't': 0.15},
+        # 'u': {'a': 0.035, 'd': 0.0476, 't': 0.433}
+    }
+    
+    li = 30/72 
+    return update_ecg()
+    
+def vfib():
+    global params, li
+    params = {
+        'p': {'a': 0.1, 'd': 0.04, 't': 0.05},
+        'q': {'a': 0.1, 'd': 0.03, 't': 0.05},
+        'r': {'a': 0.8, 'd': 0.05, 't': 0.1},
+        's': {'a': 0.1, 'd': 0.03, 't': 0.05},
+        't': {'a': 0.1, 'd': 0.03, 't': 0.05},
+        # 'u': {'a': 0.035, 'd': 0.0476, 't': 0.433}
+    }
+    li = 30/72
+    return update_ecg()
 
