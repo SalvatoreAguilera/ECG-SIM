@@ -11,6 +11,7 @@ import matplotlib.pylab as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg) 
 import normal
+
 update_in_progress = False
 # FUNCTION TO GET THE NEW PARAMETERS FROM THE GUI
 def get_new_parameters(parameters):
@@ -211,8 +212,8 @@ def animation(window,ecg_num):
     
     # function for Funcanimation 
     def update(frame):
-        global y, update_requested
-        nonlocal hr
+        global y
+        nonlocal hr, update_requested
         if frame == len(t) - 1 and update_requested:
             y = normal.update_ecg()
             hr = normal.get_HR()
@@ -272,7 +273,7 @@ def animation(window,ecg_num):
 
     
     def on_click_update():
-        global update_requested
+        nonlocal update_requested
         update_requested = True
         
         

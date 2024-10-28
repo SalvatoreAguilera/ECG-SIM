@@ -1,16 +1,17 @@
-# GUI UPDATED 
-
 from tkinter import *
-#from tkinter import ttk
+from ttkbootstrap.constants import *
 import ttkbootstrap as ttk
 import tkinter as tk
 import numpy as np
 from PIL import ImageTk, Image
 from glob import glob
 import matplotlib.pylab as plt
+from matplotlib.widgets import Slider
 from matplotlib.animation import FuncAnimation
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg) 
 import normal
+import print_plot
+
 update_in_progress = False
 # FUNCTION TO GET THE NEW PARAMETERS FROM THE GUI
 def get_new_parameters(parameters):
@@ -172,13 +173,14 @@ def newWindow():
     window.configure( background='black' )
     live_signal = animation(window, ecg_num)
     
-
-    
+print_x = []
+print_y = []
 t = np.linspace(-2,2,1200)
 y = normal.normal()
 
 def animation(window,ecg_num):
-    global t, y
+    global t, y, print_y, print_x
+    print_y = []
     btm2_frame = tk.LabelFrame(window,bg="black", foreground="#99f20f",text="LEAD II",bd=0, height=250, width=500)
     btm2_frame.pack()
     btm3_frame = tk.LabelFrame(window,bg="black", foreground="#99f20f",text="V1",bd=0, height=250, width=500)
@@ -204,45 +206,48 @@ def animation(window,ecg_num):
         y = normal.update_ecg()
          
     get_new_parameters(parameters)
-    
+    print_y.extend(y)
     # create figure 
     fig1, axis = plt.subplots(figsize=(7,2),facecolor="black")                   # background of fig black
     fig2, axis2 = plt.subplots(figsize=(7,2),facecolor="black")
     
     # function for Funcanimation 
     def update(frame):
-        global y, update_requested
-        # If we're at the last frame of the current animation
+        global y, print_y
+        nonlocal hr, update_requested
+        if frame == len(t) - 1 and not update_requested:
+            print_y.extend(y)
         if frame == len(t) - 1 and update_requested:
-            # Apply the new parameters
             y = normal.update_ecg()
             hr = normal.get_HR()
+            print_y.extend(y)
             update_rate()
-            update_requested = False  # Reset the flag
+            update_requested = False 
 
         
         animated_plot.set_data(t[:frame], y[:frame])
         
+        
         return animated_plot
     
-    axis.set_xlim([min(t),max(t)])                                # set the limits of time for x
-    axis.set_ylim([min(y),max(y)])                                         # Set limit for amplitude for y 
+    axis.set_xlim([-2,2])                                # set the limits of time for x
+    axis.set_ylim([0,2.5])                                         # Set limit for amplitude for y 
     plt.xticks(np.arange(min(t), max(t)+1, 0.25))
     plt.yticks(np.arange(min(y)-1,max(y), 0.25)) 
     animated_plot, = axis.plot([],[],color="#84f91c")
-    
-    axis.set_facecolor("black")                                   # set background of graph as black
+    axis.set_facecolor("black")
+                                   
 
     # call animation
     animate = FuncAnimation(fig= fig1, func= update,frames=len(t),interval=10, repeat="False")
     
     # Embed fig in canvas
     canvas = FigureCanvasTkAgg(fig1, btm2_frame)
-      
+    
     # draw ecg signal
     canvas.draw()
     canvas.get_tk_widget().pack(side=LEFT)
-
+    
     #HR
     HR_frame= tk.LabelFrame(btm2_frame, text="HR",font=('Arial', 15),bg="black", highlightthickness=0, width=100,foreground="#99f20f",height=100)
     HR_frame.pack(side=LEFT)
@@ -273,14 +278,17 @@ def animation(window,ecg_num):
 
     
     def on_click_update():
-        global update_requested
+        nonlocal update_requested
         update_requested = True
         
         
 
     # buttom frame
     def on_click_exit():
+        global print_y, print_x
         clicked.set(" Heart Rhythms ")
+        print_x = np.linspace(0, 4*(len(print_y)/1200), len(print_y))
+        print_onECG_change()
         window.destroy()
     
     button_exit_frame= Frame(window)
@@ -303,52 +311,122 @@ def update_tk_parameters(*args):
     if update_in_progress:
         normal.params[args[0]][args[1]] = w 
 
+  
+def switch_frame(frame):
+    for f in frames.values():
+        f.pack_forget()  
+    frames[frame].pack(fill="both", expand=True)  
+
+# **************** Print Frame Functions ********************
+def print_update(val):
+    start = slider.val  
+    end = start + print_window_size  # Set the end based on window size
+    print_ax.set_xlim([start, end])  # Adjust x-axis limits
+    print_fig.canvas.draw_idle()
     
- 
+def print_onECG_change():
+    global print_y, print_x
+    print_ax.clear()
+    print_ax.plot(print_x, print_y)
+    print_fig.canvas.draw_idle()
 
-root = ttk.Window(themename="cyborg")
+def print_onPrint_click():
+    global print_y, print_x
+    start_val = (entry_from.get())
+    end_val = (entry_to.get())
+    
+    if not start_val or not end_val:
+        return
+    
+    start = int(start_val)
+    end = int(end_val)
+    
+    print_x_np = np.array(print_x)  
+    print_y_np = np.array(print_y)
+    
+    print_list_y = print_y_np[(print_x_np >= start) & (print_x_np <= end)]
+    end = end - start
+    print_plot.plot_ecg(print_list_y, end)
+
+# **************** CREATE MAIN WINDOW ********************
+root = ttk.Window(themename="superhero")
 root.title("ECG Simulator")
-root.attributes('-fullscreen', False)
+root.geometry("1000x800")
 
-# Quit function
-def on_escape(event):
-    root.quit()
-root.bind('<Escape>', on_escape)
+sidebar = ttk.Frame(root, width= 200)
+sidebar.pack(side="left", fill="y")
 
-# Main title frame
-main_frame = Frame(root, highlightbackground="white", highlightthickness=2)
-main_frame.grid(row=0, column=0, padx=10, pady=5, sticky="nsew")
+icon = tk.PhotoImage(file="ecg.png")  
 
-# Main label
-main_label = Label(main_frame, text="Electrocardiogram Simulator", font=('Time', 30), foreground="white")
-main_label.grid(row=0, column=3, padx=10)
+icon_label = tk.Label(sidebar, image=icon)  
+icon_label.pack(pady=50)  
 
-# Disease container
-disease_frame = ttk.LabelFrame(root, borderwidth=10, text="DISEASES", height=600, width=250)
-disease_frame.grid(row=1, column=1, padx=10, pady=5, sticky="nsew")
 
-# Parameter container
-parameter_frame = ttk.LabelFrame(root, borderwidth=10, text="PARAMETERS", takefocus="1", height=600, width=500)
-parameter_frame.grid(row=1, column=0, padx=10, pady=5, sticky="nsew")
-parameter_frame.grid_propagate(False)
+content_area = ttk.Frame(root)
+content_area.pack(side="right", fill="both", expand=True)
 
-# Configure dynamic resizing for root window
-root.grid_rowconfigure(1, weight=1)  # Allow disease_frame and parameter_frame to expand vertically
-root.grid_columnconfigure(0, weight=3)  # Make parameter_frame expand more (3x space of disease_frame)
-root.grid_columnconfigure(1, weight=1)  # disease_frame expands less
+style = ttk.Style()
+style.configure("Custom.TButton",
+                background="darkblue",
+                foreground="white", 
+                font=('Helvetica', 12, 'bold'))
 
-# Options for disease
-options = [
-    "Normal Rhythm", "Bradycardia", "Tachycardia", "Atrial Tachycardia",
-    "Atrial Flutter", "A Fib", "Multifocal Atrial Tachycardia", "VT",
-    "Sinus Arrhythmia", "VF", "VFib"
+buttons = [
+    ("Electrocardiogram", lambda: switch_frame("Electrocardiogram")),
+    ("Print", lambda: switch_frame("Print")),
+    ("Simulator", lambda: switch_frame("Simulator"))
 ]
-clicked = StringVar()
-clicked.set("Heart Rhythms")
-drop = OptionMenu(disease_frame, clicked, *options)
-drop.place(x=60, y=50)
 
-# Parameter variables
+for text, cmd in buttons:
+    btn = ttk.Button(sidebar, text=text, command=cmd, width=20, style="Custom.TButton")
+    btn.pack(fill="x", padx=10,ipady=20)
+
+ecg_frame = ttk.Frame(content_area)
+print_frame = ttk.Frame(content_area)
+simulator_frame = ttk.Frame(content_area)
+
+
+
+frames = {
+    "Electrocardiogram": ecg_frame,
+    "Print": print_frame,
+    "Simulator": simulator_frame
+}
+
+ecg_frame.pack(fill="both", expand=True)
+
+# ****************************ECG FRAME********************************
+main_frame = Frame(ecg_frame, highlightbackground="white", highlightthickness=2)
+main_frame.pack(padx=10, pady=5) 
+
+main_label = Label(main_frame, text="Electrocardiogram Simulator", font=('Time', 30), foreground="white")
+main_label.pack(padx=10)  
+
+disease_frame = ttk.LabelFrame(ecg_frame, borderwidth=10, text="DISEASES", height=300, width=300)
+disease_frame.pack(padx=10, pady=10, side="right", fill="y") 
+
+parameter_frame = ttk.LabelFrame(ecg_frame, borderwidth=10, text="PARAMETERS",takefocus="1", height=500, width=500)
+parameter_frame.pack(padx=10, pady=10, side="right", fill="y")
+
+options = [ 
+        "Normal Rhythm",
+        "Bradycardia", 
+        "Tachycardia", 
+        "Atrial Tachycardia", 
+        "Atrial Flutter", 
+        "A Fib",
+        "Multifocal Atrial Tachycardia",
+        "VT",
+        "Sinus Arrhythmia",
+        "VF",
+        "VFib"
+    ] 
+
+clicked = StringVar()  
+clicked.set( " Heart Rhytms " ) 
+drop = OptionMenu( disease_frame , clicked , *options )
+drop.place(x = 60, y = 50)
+
 var_P_amp = DoubleVar()
 var_P_feq = DoubleVar()
 var_P_per = DoubleVar()
@@ -369,13 +447,14 @@ var_T_amp = DoubleVar()
 var_T_feq = DoubleVar()
 var_T_per = DoubleVar()
 
+
 parameters = [var_P_amp, var_P_feq, var_P_per, var_Q_amp, var_Q_feq, var_Q_per,
               var_R_amp, var_R_feq, var_R_per, var_S_amp, var_S_feq, var_S_per,
               var_T_amp, var_T_feq, var_T_per]
 
+
 get_new_parameters(parameters)
 
-# Parameter tracing
 var_P_amp.trace_add("write", lambda *args: update_tk_parameters("p", "a", var_P_amp))
 var_P_feq.trace_add("write", lambda *args: update_tk_parameters("p", "d", var_P_feq))
 var_P_per.trace_add("write", lambda *args: update_tk_parameters("p", "t", var_P_per))
@@ -396,12 +475,59 @@ var_T_amp.trace_add("write", lambda *args: update_tk_parameters("t", "a", var_T_
 var_T_feq.trace_add("write", lambda *args: update_tk_parameters("t", "d", var_T_feq))
 var_T_per.trace_add("write", lambda *args: update_tk_parameters("t", "t", var_T_per))
 
-# Button to start signal
-btn_start = ttk.Button(disease_frame, text="Start", bootstyle='danger', command=newWindow)
-btn_start.place(x=100, y=400)
 
-# Close window button
+parameter_values = [var.get() for var in parameters]
+
+btn_start = ttk.Button( disease_frame , text = " Start " ,bootstyle='danger', command = newWindow)
+btn_start.place(x= 100,y = 400)
+
 button = ttk.Button(root, text="Exit", bootstyle="danger", command=quit)
-button.place(x=500, y=700)
+button.place(x= 500,y=700)
 
+
+#***************************PRINT FRAME********************************
+print_main_frame = Frame(print_frame, highlightbackground="white", highlightthickness=2)
+print_main_frame.pack(padx=10, pady=5) 
+
+print_main_label = Label(print_main_frame, text="Print ECG", font=('Time', 30), foreground="white")
+print_main_label.pack(padx=10) 
+
+print_frame = ttk.LabelFrame(print_frame, borderwidth=10, text="Editor", height=200, width=500)
+print_frame.pack(padx=10, pady=10, side="top", fill="y")
+
+
+#plot frame
+print_fig, print_ax = plt.subplots(figsize=(6, 4))
+print_ax.plot(print_x, print_y)
+print_window_size = 5
+
+print_ax.set_xlim([0, print_window_size])
+canvas = FigureCanvasTkAgg(print_fig, master=print_frame)
+canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+slider_ax = print_fig.add_axes([0.25, 0.02, 0.65, 0.03], facecolor='lightgoldenrodyellow')
+slider = Slider(slider_ax, 'Time (s)', 0, 30 - print_window_size, valinit=0)
+
+slider.on_changed(print_update)
+
+label_range = ttk.Label(print_frame, text="Range")
+label_range.pack(pady=10, padx=10)
+
+input_frame = ttk.Frame(print_frame)
+input_frame.pack()
+
+label_from = ttk.Label(input_frame, text="From:")
+label_from.pack(side=tk.LEFT, padx=5)
+entry_from = ttk.Entry(input_frame, width=10)
+entry_from.pack(side=tk.LEFT, padx=5)
+
+
+label_to = ttk.Label(input_frame, text="To:")
+label_to.pack(side=tk.LEFT, padx=5)
+entry_to = ttk.Entry(input_frame)
+entry_to.pack(side=tk.LEFT, padx=5)
+
+submit_button = ttk.Button(print_frame, text="Print", command=print_onPrint_click)
+submit_button.pack(pady=20)
+#***************************SIMULATOR FRAME********************************
 root.mainloop()

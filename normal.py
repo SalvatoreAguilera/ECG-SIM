@@ -104,7 +104,7 @@ params = {
 }
 
 li = 30/72  # Length of the interval (1 second)
-time = np.linspace(-1, 1, 1000)  
+time = np.linspace(-2, 2, 1000)  
 
 p_wave = p_wav(time, params['p']['a'], params['p']['d'], params['p']['t'], li)
 q_wave = q_wav(time, params['q']['a'], params['q']['d'], params['q']['t'], li)
