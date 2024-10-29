@@ -9,6 +9,8 @@ import matplotlib.pylab as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg) 
 import normal
+import print_plot
+
 update_in_progress = False
 # FUNCTION TO GET THE NEW PARAMETERS FROM THE GUI
 def get_new_parameters(parameters):
@@ -147,7 +149,7 @@ def set_parameters_P(wave, var_P_amp,var_P_feq, var_P_per ):
     sp_3_label.grid(row=row_per_label, column=col_per_label, padx=2,pady=2)
     sp_3 = ttk.Spinbox(parameter_frame, from_=-5, to_=10, increment=0.1, width=7, textvariable=var_P_per, bootstyle= "success")
     sp_3.grid(row=row_per_spin, column=col_per_spin, padx=10,pady=2) 
-     
+
 # FUNCTION CREATES NEW WINDOW FOR THE LIVE ECG
 def new_ecg_signal():
         ecg_signal_frame = tk.Frame(btm2_frame, height=frame_size_height,                                      # ecg signal frame inside btm2
@@ -170,14 +172,16 @@ def ecg_start():
     ecg_frame.config(text=clicked.get())
     animation(ecg_num)
 
-    
+print_x = []
+print_y = []
 t = np.linspace(-2,2,1200)
 y = normal.normal()
 
 def animation(ecg_num):
-    global t, y
+    global t, y, print_y, print_x
+    print_y = []
 
-    queue_anim = 0
+    update_requested = False
     if(clicked.get() == 'Normal Rhythm'):
         t = np.linspace(-2,2,1200)
         y = normal.normal()
@@ -198,51 +202,63 @@ def animation(ecg_num):
         y = normal.update_ecg()
          
     get_new_parameters(parameters)
+    print_y.extend(y)
     
     # create figure 
-    fig1, axis = plt.subplots(figsize=(7,2),facecolor="black")                   # background of fig black
+    fig1, axis = plt.subplots(figsize=(7,2),facecolor="#2B3F51")                   # background of fig black
+    plt.axis("off")
     # mockup
-    t2 = np.linspace(-2,2,1000)
-    y2 = np.linspace(1,1, 1000)
-    fig2, axis2 = plt.subplots(figsize=(7,2),facecolor="black")
+    t2 = np.linspace(-2,2,1200)
+    y2 = np.array(y)
+    inverse_y2 = -y2
+
+    fig2, axis2 = plt.subplots(figsize=(7,2),facecolor="#2B3F51")
+    plt.axis("off")
+    
     
     # function for Funcanimation 
     def update(frame):
-        nonlocal queue_anim
+        global y, print_y
+        nonlocal hr, update_requested
+        if frame == len(t) - 1 and not update_requested:
+            print_y.extend(y)
+        if frame == len(t) - 1 and update_requested:
+            y = normal.update_ecg()
+            hr = normal.get_HR()
+            print_y.extend(y)
+            update_rate()
+            update_requested = False 
         # update the new points after each frame
         animated_plot.set_data(t[:frame], y[:frame])
-        animated_plot2.set_data(t2[:frame], y2[:frame])
-        if(frame == len(t)-1 and queue_anim > 0):
-            queue_anim -= 1
-            
+        animated_plot2.set_data(t2[:frame], inverse_y2[:frame])
         
         return animated_plot, animated_plot2
     
     axis.set_xlim([min(t),max(t)])                                # set the limits of time for x
     axis.set_ylim([min(y),max(y)])                                         # Set limit for amplitude for y 
-    axis2.set_xlim([-.1,.1])                                # set the limits of time for x
-    axis2.set_ylim([-2,2]) 
+    axis2.set_xlim([min(t2), max(t2)])                                # set the limits of time for x
+    axis2.set_ylim([min(inverse_y2), max(inverse_y2)]) 
     plt.xticks(np.arange(min(t), max(t)+1, 0.25))
     plt.yticks(np.arange(min(y)-1,max(y), 0.25)) 
     animated_plot, = axis.plot([],[],color="#84f91c")
     animated_plot2, = axis2.plot([],[],color="#84f91c")
-    axis.set_facecolor("black")
-    axis2.set_facecolor("black")                                   # set background of graph as black
+    axis.set_facecolor("#2B3F51")
+    axis2.set_facecolor("#2B3F51")                                   # set background of graph as black
 
 
 
     # call animation
     animate = FuncAnimation(fig= fig1, func= update,frames=len(t),interval=10, repeat="False")
-    #animate2 = FuncAnimation(fig= fig2, func= update,frames=len(t),interval=10, repeat="False")
+    animate2 = FuncAnimation(fig= fig2, func= update,frames=len(t),interval=10, repeat="False")
     
     # Embed fig in canvas
     canvas = FigureCanvasTkAgg(fig1, ecg_signal_frame)
-    canvas2 = FigureCanvasTkAgg(fig2, btm3_frame)
+    canvas2 = FigureCanvasTkAgg(fig2, V1_signal_frame)
     # draw ecg signal
     canvas.draw()
     canvas.get_tk_widget().pack(side="left")
     canvas2.draw()
-    canvas2.get_tk_widget().pack(side="left", anchor="w", fill="both", expand=True)
+    canvas2.get_tk_widget().pack(side="left")
 
 
     # dot blicking
@@ -256,22 +272,39 @@ def animation(ecg_num):
 
     def update_rate():
         HR_canvas.itemconfig(rate, text=str(hr))
+        pulse_canvas.itemconfig(pulse_result, text=str(pulse_))
+        awRR_canvas.itemconfig(awRR_result, text=str(awRR_))
+        Tperi_canvas.itemconfig(Tperi_result, text=str(Tp))
 
-    hr = normal.get_HR()
+    # check for manual input 
+    if (var_1.get() == 1):
+        hr = hr_entry.get()
+    else:
+        hr = normal.get_HR()
+    if (var_2.get()==1):
+        pulse_ = pulse_entry.get()
+    #else:
+    #    pulse_ = 0
+    if ( var_3.get() == 1):
+        awRR_ = awRR_entry.get()
+
+    if (var_4.get() == 1):
+        Tp = TP_entry.get()
+    
+
     HR_canvas.after(11000,update_rate)
 
     #stop animation and update 
     def on_click_update():
-        global y
-        nonlocal hr, queue_anim
-        queue_anim += 1
-        y = normal.update_ecg()
-        hr= normal.get_HR()
-        update_rate()
+        nonlocal update_requested
+        update_requested = True
 
     # buttom frame
     def on_click_exit():
+        global print_y, print_x
         clicked.set(" Heart Rhythms ")
+        print_x = np.linspace(0, 4*(len(print_y)/1200), len(print_y))
+        #print_onECG_change()
         ecg_signal_frame.destroy()
         
     button_exit_frame= ttk.Frame(btm4_frame)
@@ -294,8 +327,43 @@ def update_tk_parameters(*args):
     if update_in_progress:
         normal.params[args[0]][args[1]] = w 
 
+def switch_frame(frame):
+    for f in frames.values():
+        f.grid_forget()  
+    frames[frame].grid()
+'''
+# **************** Print Frame Functions ********************
+def print_update(val):
+    start = slider.val  
+    end = start + print_window_size  # Set the end based on window size
+    print_ax.set_xlim([start, end])  # Adjust x-axis limits
+    print_fig.canvas.draw_idle()
+    
+def print_onECG_change():
+    global print_y, print_x
+    print_ax.clear()
+    print_ax.plot(print_x, print_y)
+    print_fig.canvas.draw_idle()
+
+def print_onPrint_click():
+    global print_y, print_x
+    start_val = (entry_from.get())
+    end_val = (entry_to.get())
+    if not start_val or not end_val:
+        return
+    
+    start = int(start_val)
+    end = int(end_val)
+    
+    print_x_np = np.array(print_x)  
+    print_y_np = np.array(print_y)
+    
+    print_list_y = print_y_np[(print_x_np >= start) & (print_x_np <= end)]
+    end = end - start
+    #print_plot.plot_ecg(print_list_y, end)
+'''
 ########Main window for ECG###############
-window = ttk.Window(themename = "cyborg")
+window = ttk.Window(themename = "superhero")
 window.title("ECG Simulator")
 window.attributes('-fullscreen',True)
 
@@ -304,13 +372,16 @@ screen_width = window.winfo_screenwidth()
 screen_height = window.winfo_screenheight()
 
 # size for frames
-pf_width_size = int(screen_width * .25)
-pf_height_size = int(screen_height * .70)
-df_width_size = int(screen_width * .15)
-df_height_size = int(screen_height * .70)
-ecg_width_size = int(screen_width * .60)
-ecg_height_size = int(screen_height * .70)
-save_width_size = int(screen_width * .20)
+left_width = int(screen_width * 0.20)
+right_width = int(screen_height * 0.80)
+
+pf_width_size = int(right_width * .50)
+pf_height_size = int(screen_height * .65)
+df_width_size = int(right_width * .25)
+df_height_size = int(screen_height * .30)
+ecg_width_size = int(right_width * .60)
+ecg_height_size = int(screen_height * .65)
+save_width_size = int(right_width * .33)
 save_height_size = int(screen_height * .30)
 
 #quit
@@ -318,15 +389,67 @@ def on_escape(event):
     window.quit() 
 window.bind('<Escape>', on_escape)
 
+#### LEFT / RIGHT FRAMES ####
+left_frame = ttk.Frame(window, width= left_width, height= screen_height)
+left_frame.grid(row = 0, column = 0)
+left_frame.grid_propagate(False)
+right_frame = ttk.Frame(window, width= right_width, height= screen_height)
+right_frame.grid(row = 0, column = 1)
+
+# dashboard 
+title_dash = ttk.Frame(left_frame, width= left_width, height = (screen_height * 0.10))
+title_dash.grid(row = 0)
+icon = tk.PhotoImage(file="ecg.png")  
+icon_label = ttk.Label(left_frame, image=icon)  
+icon_label.grid(row = 0)  
+
+content_area = ttk.Frame(left_frame)
+content_area.grid(row = 1)
+
+buttons = [
+    ("Electrocardiogram", lambda: switch_frame("Electrocardiogram")),
+    ("Print", lambda: switch_frame("Print")),
+    ("Simulator", lambda: switch_frame("Simulator"))
+]
+
+for text, cmd in buttons:
+    btn = ttk.Button(content_area, text=text, command=cmd, width=20, style="Custom.TButton")
+    btn.pack(fill="x", padx=10,ipady=20)
+
+ECG_frame = ttk.Frame(content_area)
+print_frame = ttk.Frame(content_area)
+simulator_frame = ttk.Frame(content_area)
+
+frames = {
+    "Electrocardiogram": ECG_frame,
+    "Print": print_frame,
+    "Simulator": simulator_frame
+}
+ECG_frame.pack(fill="both", expand=True)
+
+# Button to start signal
+btn_start = ttk.Button(left_frame , text = " Start " ,style='S.TButton', command= ecg_start)
+btn_x_start = int((left_width/3))
+btn_start.config(width= 7)
+btn_start.place(x= btn_x_start,y = 500)
+# close window
+btn_quit = ttk.Button(left_frame, text="Exit", style="Q.TButton", command=quit)
+btn_x_quit = int((left_width/3))
+btn_quit.config(width= 7)
+btn_quit.place(x= btn_x_quit,y=600)
+
 ### TOP / BOTTOM FRAMES ######
-top_frame = ttk.Frame(width = screen_width, height= (screen_height* .75))
+top_frame = ttk.Frame(right_frame, width = right_width, height= (screen_height* .75))
 top_frame.grid(row = 0)
-bottom_frame = ttk.Frame(width = screen_width, height= (screen_height* .25))
+bottom_frame = ttk.Frame(right_frame, width = right_width, height= (screen_height* .25))
 bottom_frame.grid(row = 1)
+
+main_label = ttk.Label(top_frame, text="Electrocardiogram Simulator", font=('Time', 30), foreground="white")
+main_label.grid(row = 0, sticky="n")
 
 # parameter container
 parameter_frame = ttk.LabelFrame(top_frame, text="PARAMETERS",takefocus="1", width= pf_width_size, height=pf_height_size)
-parameter_frame.grid(row= 1,column=0, rowspan= 2,columnspan= 1,padx=5, pady=5, sticky="w")
+parameter_frame.grid(row= 1,column=0, rowspan= 2,columnspan= 1,padx=2, pady=2, sticky="w")
 parameter_frame.grid_propagate(False)
 var_P_amp = tk.DoubleVar()
 var_P_feq = tk.DoubleVar()
@@ -377,10 +500,83 @@ var_T_per.trace_add("write", lambda *args: update_tk_parameters("t", "t", var_T_
 
 parameter_values = [var.get() for var in parameters]
 
-# disease container 
-disease_frame = ttk.LabelFrame(top_frame, borderwidth=10, text="DISEASES",height=df_height_size, width=df_width_size)
-disease_frame.grid(row= 1,column=1,columnspan=1, rowspan=2, padx=10, pady=5)
+########live ecg frame############
+ecg_frame = ttk.LabelFrame(top_frame, text="LIVE ECG", width= ecg_width_size,height=ecg_height_size)
+ecg_frame.grid(row =1, column= 2)
 
+frame_size_width = ecg_width_size * .80                                                                # width for signal frame
+frame_size_height = ecg_height_size * .35                                                              # height for signal frame
+bot_frame_size_w = ecg_width_size * .20                                                                # bottom frames width
+bot_frame_size_h = ecg_height_size * .30                                                               # bottom frames height
+hr_width_side = ecg_width_size * .20                                                                   # heatrate width for frame
+
+leadII_label = ttk.Label(ecg_frame,text="LEAD II", foreground="#84f91c")                                                      # Label for LeadII
+leadII_label.grid(row = 0, column = 0, sticky="w")                                                                 # placing leadII
+btm2_frame = ttk.Frame(ecg_frame, height=frame_size_height,width= frame_size_width)                     # frame for leadII signal
+btm2_frame.grid(row = 1, column=0, columnspan=2)
+#btm2_frame.grid_propagate(False)
+
+leadV1_frame = ttk.Label(ecg_frame,text="V1", foreground="#84f91c")                                           # Label for LeadV1
+leadV1_frame.grid(row = 2, column=0, sticky= "w")
+btm3_frame = ttk.Frame(ecg_frame,height=frame_size_height, width=frame_size_width)                     # frame for V1
+btm3_frame.grid(row = 3, column=0, columnspan=2)
+#btm3_frame.grid_propagate(False)
+
+btm4_frame = tk.Frame(ecg_frame, height=bot_frame_size_h,                                   # frame for bottom frames
+                      width=bot_frame_size_w)
+btm4_frame.grid(row = 4)
+#btm4_frame.grid_propagate(False)
+
+ecg_signal_frame = tk.Frame(btm2_frame,height=frame_size_height,width=(frame_size_width))           # ecg signal frame inside btm2
+ecg_signal_frame.grid(row = 0, column=0, columnspan=2)
+V1_signal_frame = tk.Frame(btm3_frame,height=frame_size_height,width=(frame_size_width))
+V1_signal_frame.grid(row = 0, column=0, columnspan=2)
+
+HR_frame= tk.Frame(btm2_frame,width=hr_width_side,height=100)                                          # frame for heartrate  
+HR_frame.grid(row= 0, column=3)
+HR_canvas = tk.Canvas(HR_frame,highlightthickness=0, bg="black",width = 100,                          # Canvas for HR to display numbers
+                     height=100)
+HR_canvas.grid(row = 0, column=2)
+Heart_rate = HR_canvas.create_text(10,10, text="HR", font=('Arial', 15), fill= "red")                   # label for heartrate
+
+d_canvas = tk.Canvas(HR_frame, bg="black",bd=0,highlightcolor="black",                                 # canvas to draw the red circle
+                     highlightthickness=0, width = 18, height=20)
+d_canvas.grid(row=0, column=0)
+dot = d_canvas.create_oval(2, 2, 18, 18, fill='red', outline= "")                                      # create the dot
+rate = HR_canvas.create_text(50, 50, text="--", font=('Arial', 40), fill= "#99f20f")                    # output the HR
+
+pulse_frame = tk.Frame(btm4_frame,width = bot_frame_size_w, height = bot_frame_size_h, padx= 2)
+pulse_frame.grid(row = 0, column=1)
+pulse_canvas = tk.Canvas(pulse_frame, highlightthickness=0, bd= 0, bg="black",                           # establish canvas to draw pulse
+                         height= bot_frame_size_h, width=100)                           
+pulse_canvas.grid(row = 0, column=0)                                                            
+pulse = pulse_canvas.create_text(20,20, text="Pulse", font=('Arial', 15), fill= "#0fbef2")              # create pulse label
+pulse_result = pulse_canvas.create_text(70,70, text="--", font=('Arial', 50), fill= "#0fbef2" )         # create "--" waiting for input
+
+awRR_frame = tk.Frame(btm4_frame,width = bot_frame_size_w, height = bot_frame_size_h, padx= 2)
+awRR_frame.grid(row = 0, column= 2)
+awRR_canvas = tk.Canvas(awRR_frame, highlightthickness=0, bd= 0, bg="black",                           # establish canvas to draw awRR
+                         width= 100, height= bot_frame_size_h)                           
+awRR_canvas.grid(row = 0, column= 0)                                                            
+awRR = awRR_canvas.create_text(20,20, text="awRR", font=('Arial', 15), fill= "white")                                  # create awRR label
+awRR_result = awRR_canvas.create_text(70,70, text="--", font=('Arial', 50), fill= "white" )         # create "--" waiting for input
+
+Tperi_frame = tk.Frame(btm4_frame,width = bot_frame_size_w, height = bot_frame_size_h, padx= 2)
+Tperi_frame.grid(row = 0, column= 3)
+Tperi_canvas = tk.Canvas(Tperi_frame, highlightthickness=0, bd= 0, bg="black",                           # establish canvas to draw pulse
+                         width=100, height= bot_frame_size_h)                           
+Tperi_canvas.grid(row = 0, column= 0)                                                          
+Tperi = Tperi_canvas.create_text(20,20, text="Tperi", font=('Arial', 15), fill= "#84f91c")              # create pulse label
+Tperi_result = Tperi_canvas.create_text(70,70, text="--", font=('Arial', 50), fill= "#84f91c" )         # create "--" waiting for input
+
+########save test frame###########
+#save_frame = ttk.LabelFrame(bottom_frame, text="History", width= save_width_size, height=save_height_size)
+#save_frame.grid(row = 0, column= 0)
+#save_frame.grid_propagate(False)
+# disease container 
+disease_frame = ttk.LabelFrame(bottom_frame, borderwidth=10, text="DISEASES",height=df_height_size, width=df_width_size)
+disease_frame.grid(row= 0,column=0, sticky= "w")
+disease_frame.grid_propagate(False)
 # Options for disease 
 options = [ 
         "Heart Rhytms",
@@ -400,98 +596,103 @@ options = [
 clicked = tk.StringVar()  
 clicked.set( " Heart Rhytms " ) 
 drop = ttk.OptionMenu( disease_frame , clicked , *options )
-drop.place(x = 50, y = 50)
+drop.place(x = 30, y = 50)
 
-# Button to start signal
-btn_start = ttk.Button(disease_frame , text = " Start " ,style='S.TButton', command= ecg_start)
-btn_x_start = int((df_width_size/3))
-btn_start.config(width= 7)
-btn_start.place(x= btn_x_start,y = 400)
-# close window
-btn_quit = ttk.Button(disease_frame, text="Exit", style="Q.TButton", command=quit)
-btn_x_quit = int((df_width_size/3))
-btn_quit.config(width= 7)
-btn_quit.place(x= btn_x_quit,y=450)
+input_= ttk.LabelFrame(bottom_frame, text= "Input Rates", width= (2*save_width_size), height=save_height_size)
+input_.grid(row = 0, column= 1, columnspan= 2)
+input_.grid_propagate(False)
 
+def check_HR():
+    if var_1.get() == 1:
+        hr_entry.config(state="normal")
+    if var_2.get() ==1:
+        pulse_entry.config(state="normal")
+    if var_3.get() ==1:
+        awRR_entry.config(state="normal")
+    if var_4.get() ==1:
+        TP_entry.config(state="normal")
 
-########live ecg frame############
-ecg_frame = ttk.LabelFrame(top_frame, text="LIVE ECG", width= ecg_width_size,height=ecg_height_size)
-ecg_frame.grid(row =1, column= 2)
+def manual_():
+    hr = hr_entry.get()
+    pulse_result = pulse_entry.get()
+    awRR_result = awRR_entry.get()
+    Tperi_result = TP_entry.get()
 
-frame_size_width = ecg_width_size * .80                                                                # width for signal frame
-frame_size_height = ecg_height_size * .35                                                              # height for signal frame
-bot_frame_size_w = ecg_width_size * .20                                                                # bottom frames width
-bot_frame_size_h = ecg_height_size * .30                                                               # bottom frames height
-hr_width_side = ecg_width_size * .20                                                                   # heatrate width for frame
+var_1 = tk.IntVar()
+HR_checkbutton= ttk.Checkbutton(input_, text="Manually input HR", variable=var_1,onvalue= 1, offvalue= 0, command= check_HR)
+HR_checkbutton.grid(row = 1, column= 1)
+hr_entry = tk.Entry(input_, state="disable")
+hr_entry.grid(row = 2, column= 2,)
 
-leadII_label = ttk.Label(ecg_frame,text="LEAD II", foreground="#84f91c")                                                      # Label for LeadII
-leadII_label.grid(row = 0, column = 0, sticky="w")                                                                 # placing leadII
-btm2_frame = ttk.Frame(ecg_frame, height=frame_size_height,width= frame_size_width)                     # frame for leadII signal
-btm2_frame.grid(row = 1, column=0, columnspan=2)
+var_2 = tk.IntVar()
+Pulse_checkbutton= ttk.Checkbutton(input_, text="Manually input Pulse", variable=var_2,onvalue= 1, offvalue= 0, command= check_HR)
+Pulse_checkbutton.grid(row = 3, column= 1)
+pulse_entry = tk.Entry(input_, state="disable")
+pulse_entry.grid(row = 4, column= 2,)
 
-leadV1_frame = ttk.Label(ecg_frame,text="V1", foreground="#84f91c")                                                           # Label for LeadV1
-leadV1_frame.grid(row = 2, column=0, sticky= "w")
-btm3_frame = tk.Frame(ecg_frame,bg="black",height=frame_size_height,                                   # frame for V1
-                      width=ecg_width_size)
-btm3_frame.grid(row = 3, column=0, columnspan=2)
+var_3 = tk.IntVar()
+awRR_checkbutton= ttk.Checkbutton(input_, text="Manually input awRR", variable=var_3,onvalue= 1, offvalue= 0, command= check_HR)
+awRR_checkbutton.grid(row = 5, column= 1)
+awRR_entry = tk.Entry(input_, state="disable")
+awRR_entry.grid(row = 6, column= 2,)
 
-btm4_frame = tk.Frame(ecg_frame, bg="black",height=bot_frame_size_h,                                   # frame for bottom frames
-                      width=bot_frame_size_w)
-btm4_frame.grid(row = 4)
+var_4 = tk.IntVar()
+TP_checkbutton= ttk.Checkbutton(input_, text="Manually input Tperi", variable=var_4,onvalue= 1, offvalue= 0, command= check_HR)
+TP_checkbutton.grid(row = 8, column= 1)
+TP_entry = tk.Entry(input_, state="disable")
+TP_entry.grid(row = 9, column= 2,)
 
-ecg_signal_frame = tk.Frame(btm2_frame, bg= "black",height=frame_size_height,                                      # ecg signal frame inside btm2
-                            width=(frame_size_width))
-ecg_signal_frame.grid(row = 0, column=0, columnspan=2)
+button_awRR= ttk.Button(input_, text="Enter", command= manual_)
+button_awRR.grid(row = 10, column= 2)
 
-HR_frame= tk.Frame(btm2_frame,width=hr_width_side,height=100)                                          # frame for heartrate  
-HR_frame.grid(row= 0, column=3)
-HR_canvas = tk.Canvas(HR_frame,highlightthickness=0, bg="black",width = 100,                          # Canvas for HR to display numbers
-                     height=100)
-HR_canvas.grid(row = 0, column=2)
-Heart_rate = HR_canvas.create_text(10,10, text="HR", font=('Arial', 15), fill= "red")                   # label for heartrate
-
-d_canvas = tk.Canvas(HR_frame, bg="black",bd=0,highlightcolor="black",                                 # canvas to draw the red circle
-                     highlightthickness=0, width = 18, height=20)
-d_canvas.grid(row=0, column=0)
-dot = d_canvas.create_oval(2, 2, 18, 18, fill='red', outline= "")                                      # create the dot
-rate = HR_canvas.create_text(50, 50, text="--", font=('Arial', 40), fill= "#99f20f")                    # output the HR
-
-x_frame = tk.Frame(btm4_frame,width =350, height= bot_frame_size_h)
-x_frame.grid(row=0, column=0)
-
-pulse_frame = tk.Frame(btm4_frame,width = bot_frame_size_w, height = bot_frame_size_h, padx= 15)
-pulse_frame.grid(row = 0, column=1)
-pulse_canvas = tk.Canvas(pulse_frame, highlightthickness=0, bd= 0, bg="black",                           # establish canvas to draw pulse
-                         height= bot_frame_size_h, width=100)                           
-pulse_canvas.grid(row = 0, column=0)                                                            
-pulse = pulse_canvas.create_text(20,20, text="Pulse", font=('Arial', 15), fill= "#0fbef2")              # create pulse label
-pulse_result = pulse_canvas.create_text(70,70, text="--", font=('Arial', 50), fill= "#0fbef2" )         # create "--" waiting for input
-
-awRR_frame = tk.Frame(btm4_frame,width = bot_frame_size_w, height = bot_frame_size_h, padx= 15)
-awRR_frame.grid(row = 0, column= 2)
-awRR_canvas = tk.Canvas(awRR_frame, highlightthickness=0, bd= 0, bg="black",                           # establish canvas to draw awRR
-                         width= 100, height= bot_frame_size_h)                           
-awRR_canvas.grid(row = 0, column= 0)                                                            
-awRR = awRR_canvas.create_text(20,20, text="awRR", font=('Arial', 15), fill= "white")                                  # create awRR label
-awRR_result = awRR_canvas.create_text(70,70, text="--", font=('Arial', 50), fill= "white" )         # create "--" waiting for input
-
-Tperi_frame = tk.Frame(btm4_frame,width = bot_frame_size_w, height = bot_frame_size_h, padx= 15)
-Tperi_frame.grid(row = 0, column= 3)
-Tperi_canvas = tk.Canvas(Tperi_frame, highlightthickness=0, bd= 0, bg="black",                           # establish canvas to draw pulse
-                         width=100, height= bot_frame_size_h)                           
-Tperi_canvas.grid(row = 0, column= 0)                                                          
-Tperi = Tperi_canvas.create_text(20,20, text="Tperi", font=('Arial', 15), fill= "#84f91c")              # create pulse label
-Tperi_result = Tperi_canvas.create_text(70,70, text="--", font=('Arial', 50), fill= "#84f91c" )         # create "--" waiting for input
-
-########save test frame###########
-save_frame = ttk.LabelFrame(bottom_frame, text="History", width= save_width_size, height=save_height_size)
-save_frame.grid(row = 0, column= 0)
-
-placeholder = ttk.LabelFrame(bottom_frame, width=save_width_size, height=save_height_size)
-placeholder.grid(row = 0, column= 1)
-placeholder = ttk.LabelFrame(bottom_frame, width=save_width_size, height=save_height_size)
-placeholder.grid(row = 0, column= 2)
-placeholder = ttk.LabelFrame(bottom_frame, width=save_width_size, height=save_height_size)
+placeholder = ttk.LabelFrame(bottom_frame, text= "Saved Test", width=save_width_size, height=save_height_size)
 placeholder.grid(row = 0, column= 3)
+placeholder.grid_propagate(False)
+
+'''
+#***************************PRINT FRAME********************************
+print_main_frame = ttk.Frame(print_frame)
+print_main_frame.grid(row = 0)
+
+print_main_label = ttk.Label(print_main_frame, text="Print ECG", font=('Time', 30), foreground="white")
+print_main_label.grid(row = 0)
+
+print_frame = ttk.LabelFrame(print_frame, borderwidth=10, text="Editor", height=200, width=500)
+print_frame.grid(row = 1)
+
+#plot frame
+print_fig, print_ax = plt.subplots(figsize=(6, 4))
+print_ax.plot(print_x, print_y)
+print_window_size = 5
+
+print_ax.set_xlim([0, print_window_size])
+canvas = FigureCanvasTkAgg(print_fig, master=print_frame)
+canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+slider_ax = print_fig.add_axes([0.25, 0.02, 0.65, 0.03], facecolor='lightgoldenrodyellow')
+slider = ttk.Scale(slider_ax, text='Time (s)', from_=0, to = 30 )
+
+slider.on_changed(print_update)
+
+label_range = ttk.Label(print_frame, text="Range")
+label_range.pack(pady=10, padx=10)
+
+input_frame = ttk.Frame(print_frame)
+input_frame.pack()
+
+label_from = ttk.Label(input_frame, text="From:")
+label_from.pack(side=tk.LEFT, padx=5)
+entry_from = ttk.Entry(input_frame, width=10)
+entry_from.pack(side=tk.LEFT, padx=5)
+
+
+label_to = ttk.Label(input_frame, text="To:")
+label_to.pack(side=tk.LEFT, padx=5)
+entry_to = ttk.Entry(input_frame)
+entry_to.pack(side=tk.LEFT, padx=5)
+
+submit_button = ttk.Button(print_frame, text="Print", command=print_onPrint_click)
+submit_button.pack(pady=20)
+'''
 
 window.mainloop()
