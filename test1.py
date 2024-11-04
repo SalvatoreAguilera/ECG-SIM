@@ -10,7 +10,9 @@ from matplotlib.widgets import Slider
 from matplotlib.animation import FuncAnimation
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg) 
 import normal
+from pathlib import Path
 import print_plot
+import csv
 
 update_in_progress = False
 # FUNCTION TO GET THE NEW PARAMETERS FROM THE GUI
@@ -229,7 +231,6 @@ def animation(window,ecg_num):
         
         
         return animated_plot
-    
     axis.set_xlim([-2,2])                                # set the limits of time for x
     axis.set_ylim([0,2.5])                                         # Set limit for amplitude for y 
     plt.xticks(np.arange(min(t), max(t)+1, 0.25))
@@ -237,16 +238,11 @@ def animation(window,ecg_num):
     animated_plot, = axis.plot([],[],color="#84f91c")
     axis.set_facecolor("black")
                                    
-
-    # call animation
     animate = FuncAnimation(fig= fig1, func= update,frames=len(t),interval=10, repeat="False")
-    
-    # Embed fig in canvas
     canvas = FigureCanvasTkAgg(fig1, btm2_frame)
-    
-    # draw ecg signal
     canvas.draw()
     canvas.get_tk_widget().pack(side=LEFT)
+    
     
     #HR
     HR_frame= tk.LabelFrame(btm2_frame, text="HR",font=('Arial', 15),bg="black", highlightthickness=0, width=100,foreground="#99f20f",height=100)
@@ -346,7 +342,45 @@ def print_onPrint_click():
     
     print_list_y = print_y_np[(print_x_np >= start) & (print_x_np <= end)]
     end = end - start
-    print_plot.plot_ecg(print_list_y, end)
+    print_plot.plot_ecg(print_list_y, end, filename_entry.get())
+    
+# **************** Simulator Frame Functions ********************
+def save_to_csv(filename='ecg_save', folder_path='./simulations'):
+    global print_x, print_y
+    if filename_entry.get():
+        filename = filename_entry.get()
+    Path(folder_path).mkdir(parents=True, exist_ok=True)
+    file_path = Path(folder_path) / f"{filename}.csv"
+    
+    with open(file_path, mode='w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['X', 'Y'])
+        for x_value, y_value in zip(print_x, print_y):
+            writer.writerow([x_value, y_value])
+
+    print(f"Data saved to {file_path}")
+
+
+
+def load_saved_simulation(*args):
+    global print_x, print_y, y, t
+    x_values = []
+    y_values = []
+    path = './simulations/' + clicked_sim_menu.get() + '.csv'
+    with open(path, mode='r', newline='') as csvfile:
+        reader = csv.reader(csvfile)
+        header = next(reader)  
+        for row in reader:
+            if row:  
+                x_values.append(float(row[0])) 
+                y_values.append(float(row[1])) 
+    
+    print_x = x_values
+    print_y =y_values
+    y = y_values
+    t = x_values
+    print_onECG_change()
+    
 
 # **************** CREATE MAIN WINDOW ********************
 root = ttk.Window(themename="superhero")
@@ -481,8 +515,9 @@ parameter_values = [var.get() for var in parameters]
 btn_start = ttk.Button( disease_frame , text = " Start " ,bootstyle='danger', command = newWindow)
 btn_start.place(x= 100,y = 400)
 
-button = ttk.Button(root, text="Exit", bootstyle="danger", command=quit)
-button.place(x= 500,y=700)
+#button = ttk.Button(root, text="Exit", bootstyle="danger", command=quit)
+#button.place(x= 500,y=700)
+root.protocol("WM_DELETE_WINDOW", lambda: (root.quit(), root.destroy()))
 
 
 #***************************PRINT FRAME********************************
@@ -527,7 +562,35 @@ label_to.pack(side=tk.LEFT, padx=5)
 entry_to = ttk.Entry(input_frame)
 entry_to.pack(side=tk.LEFT, padx=5)
 
+label_filename = ttk.Label(print_frame, text="Filename:")
+label_filename.pack(pady=10, padx=10)  
+filename_entry = ttk.Entry(print_frame, width=30) 
+filename_entry.pack(pady=10, padx=10)
+
 submit_button = ttk.Button(print_frame, text="Print", command=print_onPrint_click)
 submit_button.pack(pady=20)
+
+save_button = ttk.Button(print_frame, text="Save", command=save_to_csv)
+save_button.pack(pady=0, padx=20)
+
 #***************************SIMULATOR FRAME********************************
+sim_main_frame = Frame(simulator_frame, highlightbackground="white", highlightthickness=2)
+sim_main_frame.pack(padx=10, pady=5) 
+
+sim_main_label = Label(sim_main_frame, text="Simulator ECG", font=('Time', 30), foreground="white")
+sim_main_label.pack(padx=10) 
+
+simulator_frame = ttk.LabelFrame(simulator_frame, borderwidth=10, text="Simulations", height=500, width=500)
+simulator_frame.pack(padx=10, pady=10, side="top", fill="y")
+
+def get_file_names(folder_path):
+    return [file.stem for file in Path(folder_path).iterdir() if file.is_file()]
+
+options_sim = get_file_names('./simulations')
+clicked_sim_menu = StringVar()
+clicked_sim_menu.set( " Simulations " ) 
+save_sim_drop = OptionMenu( simulator_frame , clicked_sim_menu , *options_sim )
+save_sim_drop.place(x = 60, y = 50)
+
+clicked_sim_menu.trace_add("write", load_saved_simulation)
 root.mainloop()

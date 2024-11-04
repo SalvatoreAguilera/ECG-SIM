@@ -206,11 +206,9 @@ def animation(window,ecg_num):
          
     get_new_parameters(parameters)
     
-    # create figure 
-    fig1, axis = plt.subplots(figsize=(7,2),facecolor="black")                   # background of fig black
+    fig1, axis = plt.subplots(figsize=(7,2),facecolor="black")                   
     fig2, axis2 = plt.subplots(figsize=(7,2),facecolor="black")
     
-    # function for Funcanimation 
     def update(frame):
         global y
         nonlocal hr, update_requested
@@ -225,23 +223,44 @@ def animation(window,ecg_num):
         
         return animated_plot
     
-    axis.set_xlim([min(t),max(t)])                                # set the limits of time for x
-    axis.set_ylim([min(y),max(y)])                                         # Set limit for amplitude for y 
+    def update2(frame):
+        global y
+        nonlocal hr, update_requested
+        if frame == len(t) - 1 and update_requested:
+            y = normal.update_ecg()
+            hr = normal.get_HR()
+            update_rate()
+            update_requested = False 
+
+        ys = y * -1
+        animated_plot2.set_data(t[:frame], ys[:frame])
+        
+        return animated_plot2
+    
+    axis.set_xlim([min(t),max(t)])                                
+    axis.set_ylim([min(y),max(y)])                                        
     plt.xticks(np.arange(min(t), max(t)+1, 0.25))
     plt.yticks(np.arange(min(y)-1,max(y), 0.25)) 
     animated_plot, = axis.plot([],[],color="#84f91c")
-    
-    axis.set_facecolor("black")                                   # set background of graph as black
+    axis.set_facecolor("black")                                   
 
-    # call animation
     animate = FuncAnimation(fig= fig1, func= update,frames=len(t),interval=10, repeat="False")
-    
-    # Embed fig in canvas
     canvas = FigureCanvasTkAgg(fig1, btm2_frame)
-      
-    # draw ecg signal
     canvas.draw()
     canvas.get_tk_widget().pack(side=LEFT)
+
+    axis2.set_xlim([min(t),max(t)])                                
+    axis2.set_ylim([min(-1*y),max(-1*y)])                                        
+    plt.xticks(np.arange(min(t), max(t)+1, 0.25))
+    plt.yticks(np.arange(min(-1*y)-1,max(-1*y), 0.25)) 
+    animated_plot2, = axis2.plot([],[],color="#84f91c")
+    axis2.set_facecolor("black")    
+    
+    animate = FuncAnimation(fig= fig2, func= update2,frames=len(t),interval=10, repeat="False")
+    canvas2 = FigureCanvasTkAgg(fig2, btm3_frame)
+    canvas2.draw()
+    canvas2.get_tk_widget().pack(side=LEFT) 
+
 
     #HR
     HR_frame= tk.LabelFrame(btm2_frame, text="HR",font=('Arial', 15),bg="black", highlightthickness=0, width=100,foreground="#99f20f",height=100)
@@ -418,8 +437,9 @@ btn_start = ttk.Button( disease_frame , text = " Start " ,bootstyle='danger', co
 btn_start.place(x= 100,y = 400)
 
 # close window
-button = ttk.Button(root, text="Exit", bootstyle="danger", command=quit)
-button.place(x= 500,y=700)
+#button = ttk.Button(root, text="Exit", bootstyle="danger", command=quit)
+#button.place(x= 500,y=700)'''
+root.protocol("WM_DELETE_WINDOW", lambda: (root.quit(), root.destroy()))
 
 
 root.mainloop()
