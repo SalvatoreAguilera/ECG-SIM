@@ -346,7 +346,8 @@ def print_onPrint_click():
     
 # **************** Simulator Frame Functions ********************
 def save_to_csv(filename='ecg_save', folder_path='./simulations'):
-    global print_x, print_y
+    global print_x, print_y, options_sim
+    
     if filename_entry.get():
         filename = filename_entry.get()
     Path(folder_path).mkdir(parents=True, exist_ok=True)
@@ -359,6 +360,7 @@ def save_to_csv(filename='ecg_save', folder_path='./simulations'):
             writer.writerow([x_value, y_value])
 
     print(f"Data saved to {file_path}")
+    options_sim = get_file_names('./simulations')
 
 
 
@@ -366,6 +368,8 @@ def load_saved_simulation(*args):
     global print_x, print_y, y, t
     x_values = []
     y_values = []
+    if clicked_sim_menu.get() == " Simulations ":  
+        return
     path = './simulations/' + clicked_sim_menu.get() + '.csv'
     with open(path, mode='r', newline='') as csvfile:
         reader = csv.reader(csvfile)
@@ -589,8 +593,8 @@ def get_file_names(folder_path):
 options_sim = get_file_names('./simulations')
 clicked_sim_menu = StringVar()
 clicked_sim_menu.set( " Simulations " ) 
-save_sim_drop = OptionMenu( simulator_frame , clicked_sim_menu , *options_sim )
+save_sim_drop = OptionMenu( simulator_frame , clicked_sim_menu , *options_sim, command=load_saved_simulation)
 save_sim_drop.place(x = 60, y = 50)
 
-clicked_sim_menu.trace_add("write", load_saved_simulation)
+#clicked_sim_menu.trace_add("write", load_saved_simulation)
 root.mainloop()
