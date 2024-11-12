@@ -6,10 +6,13 @@ import numpy as np
 from PIL import ImageTk, Image
 from glob import glob
 import matplotlib.pylab as plt
+from matplotlib.widgets import Slider
 from matplotlib.animation import FuncAnimation
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg) 
 import normal
+from pathlib import Path
 import print_plot
+import csv
 
 update_in_progress = False
 # FUNCTION TO GET THE NEW PARAMETERS FROM THE GUI
@@ -170,7 +173,7 @@ def ecg_start():
     # create function to update the parameters for each wave depending on the disease selected 
     #live_signal = animation(child_window, ecg_num)
     ecg_frame.config(text=clicked.get())
-    animation(ecg_num)
+    live_signal = animation(ecg_num)
 
 print_x = []
 print_y = []
@@ -207,7 +210,8 @@ def animation(ecg_num):
     # create figure 
     fig1, axis = plt.subplots(figsize=(7,2),facecolor="#2B3F51")                   # background of fig black
     plt.axis("off")
-    # mockup
+
+    # inverse
     t2 = np.linspace(-2,2,1200)
     y2 = np.array(y)
     inverse_y2 = -y2
@@ -331,24 +335,24 @@ def switch_frame(frame):
     for f in frames.values():
         f.grid_forget()  
     frames[frame].grid()
-'''
+
 # **************** Print Frame Functions ********************
 def print_update(val):
-    start = slider.val  
-    end = start + print_window_size  # Set the end based on window size
-    print_ax.set_xlim([start, end])  # Adjust x-axis limits
-    print_fig.canvas.draw_idle()
+    start = Slider.val  
+    end = start + tk.print_window_size  # Set the end based on window size
+    tk.print_ax.set_xlim([start, end])  # Adjust x-axis limits
+    tk.print_fig.canvas.draw_idle()
     
 def print_onECG_change():
     global print_y, print_x
-    print_ax.clear()
-    print_ax.plot(print_x, print_y)
-    print_fig.canvas.draw_idle()
+    tk.print_ax.clear()
+    tk.print_ax.plot(print_x, print_y)
+    tk.print_fig.canvas.draw_idle()
 
 def print_onPrint_click():
     global print_y, print_x
-    start_val = (entry_from.get())
-    end_val = (entry_to.get())
+    start_val = (tk.entry_from.get())
+    end_val = (tk.entry_to.get())
     if not start_val or not end_val:
         return
     
@@ -361,7 +365,45 @@ def print_onPrint_click():
     print_list_y = print_y_np[(print_x_np >= start) & (print_x_np <= end)]
     end = end - start
     #print_plot.plot_ecg(print_list_y, end)
+
+   
+# **************** Simulator Frame Functions ********************
 '''
+def save_to_csv(filename='ecg_save', folder_path='./simulations'):
+    global print_x, print_y
+    if tk.filename_entry.get():
+        filename = tk.filename_entry.get()
+    Path(folder_path).mkdir(parents=True, exist_ok=True)
+    file_path = Path(folder_path) / f"{filename}.csv"
+    
+    with open(file_path, mode='w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['X', 'Y'])
+        for x_value, y_value in zip(print_x, print_y):
+            writer.writerow([x_value, y_value])
+
+    print(f"Data saved to {file_path}")
+'''
+
+def load_saved_simulation(*args):
+    global print_x, print_y, y, t
+    x_values = []
+    y_values = []
+    path = './simulations/' + clicked_sim_menu.get() + '.csv'
+    with open(path, mode='r', newline='') as csvfile:
+        reader = csv.reader(csvfile)
+        header = next(reader)  
+        for row in reader:
+            if row:  
+                x_values.append(float(row[0])) 
+                y_values.append(float(row[1])) 
+    
+    print_x = x_values
+    print_y =y_values
+    y = y_values
+    t = x_values
+    print_onECG_change()
+
 ########Main window for ECG###############
 window = ttk.Window(themename = "superhero")
 window.title("ECG Simulator")
@@ -396,37 +438,9 @@ left_frame.grid_propagate(False)
 right_frame = ttk.Frame(window, width= right_width, height= screen_height)
 right_frame.grid(row = 0, column = 1)
 
-# dashboard 
-title_dash = ttk.Frame(left_frame, width= left_width, height = (screen_height * 0.10))
-title_dash.grid(row = 0)
-icon = tk.PhotoImage(file="ecg.png")  
-icon_label = ttk.Label(left_frame, image=icon)  
-icon_label.grid(row = 0)  
-
-content_area = ttk.Frame(left_frame)
-content_area.grid(row = 1)
-
-buttons = [
-    ("Electrocardiogram", lambda: switch_frame("Electrocardiogram")),
-    ("Print", lambda: switch_frame("Print")),
-    ("Simulator", lambda: switch_frame("Simulator"))
-]
-
-for text, cmd in buttons:
-    btn = ttk.Button(content_area, text=text, command=cmd, width=20, style="Custom.TButton")
-    btn.pack(fill="x", padx=10,ipady=20)
-
-ECG_frame = ttk.Frame(content_area)
-print_frame = ttk.Frame(content_area)
-simulator_frame = ttk.Frame(content_area)
-
-frames = {
-    "Electrocardiogram": ECG_frame,
-    "Print": print_frame,
-    "Simulator": simulator_frame
-}
-ECG_frame.pack(fill="both", expand=True)
-
+right_frame.columnconfigure(0, weight= 1)
+right_frame.columnconfigure(1, weight= 1)
+right_frame.columnconfigure(2, weight= 1)
 # Button to start signal
 btn_start = ttk.Button(left_frame , text = " Start " ,style='S.TButton', command= ecg_start)
 btn_x_start = int((left_width/3))
@@ -441,11 +455,56 @@ btn_quit.place(x= btn_x_quit,y=600)
 ### TOP / BOTTOM FRAMES ######
 top_frame = ttk.Frame(right_frame, width = right_width, height= (screen_height* .75))
 top_frame.grid(row = 0)
+
+top_frame.columnconfigure(0, weight=1)
+top_frame.columnconfigure(1, weight=1)
+top_frame.columnconfigure(2, weight=1)
+
 bottom_frame = ttk.Frame(right_frame, width = right_width, height= (screen_height* .25))
 bottom_frame.grid(row = 1)
 
 main_label = ttk.Label(top_frame, text="Electrocardiogram Simulator", font=('Time', 30), foreground="white")
 main_label.grid(row = 0, sticky="n")
+switch_frame_area = ttk.Frame(top_frame, width= ecg_width_size,height=ecg_height_size)
+switch_frame_area.grid(row =1 , column= 1, columnspan=2, sticky='e')
+
+switch_frame_area.columnconfigure(0, weight=1)
+switch_frame_area.columnconfigure(1, weight=1)
+switch_frame_area.columnconfigure(2, weight=1)
+
+# dashboard 
+icon = tk.PhotoImage(file="ecg.png")  
+icon_label = ttk.Label(left_frame, image=icon)  
+icon_label.grid(row = 0)  
+title_dash = ttk.Frame(left_frame, width= left_width, height = (screen_height * 0.10))
+title_dash.grid(row = 1, sticky="nsew", pady=10)
+
+content_area = ttk.Frame(switch_frame_area)
+content_area.grid(row = 0)
+content_area.columnconfigure(0, weight=1)
+content_area.columnconfigure(1, weight=1)
+content_area.columnconfigure(2, weight=1)
+buttons = [
+    ("Electrocardiogram", lambda: switch_frame("Electrocardiogram")),
+    ("Print", lambda: switch_frame("Print")),
+    ("Simulator", lambda: switch_frame("Simulator"))
+]
+
+for text, cmd in buttons:
+    btn = ttk.Button(title_dash, text=text, command=cmd, width=20, style="Custom.TButton")
+    btn.grid(padx=25)
+
+ecg_frame = ttk.LabelFrame(content_area, text="LIVE ECG", width= ecg_width_size,height=ecg_height_size)
+print_frame = ttk.LabelFrame(content_area, text="ECG PRINT", width= ecg_width_size,height=ecg_height_size)
+print_frame.grid_propagate(False)
+sim_frame = ttk.LabelFrame(content_area, text="Simulation", width= ecg_width_size,height=ecg_height_size)
+
+frames = {
+    "Electrocardiogram": ecg_frame,
+    "Print": print_frame,
+    "Simulator": sim_frame
+}
+ecg_frame.grid()
 
 # parameter container
 parameter_frame = ttk.LabelFrame(top_frame, text="PARAMETERS",takefocus="1", width= pf_width_size, height=pf_height_size)
@@ -501,37 +560,40 @@ var_T_per.trace_add("write", lambda *args: update_tk_parameters("t", "t", var_T_
 parameter_values = [var.get() for var in parameters]
 
 ########live ecg frame############
-ecg_frame = ttk.LabelFrame(top_frame, text="LIVE ECG", width= ecg_width_size,height=ecg_height_size)
-ecg_frame.grid(row =1, column= 2)
 
+### SIZE FOR FRAME 
 frame_size_width = ecg_width_size * .80                                                                # width for signal frame
 frame_size_height = ecg_height_size * .35                                                              # height for signal frame
 bot_frame_size_w = ecg_width_size * .20                                                                # bottom frames width
 bot_frame_size_h = ecg_height_size * .30                                                               # bottom frames height
 hr_width_side = ecg_width_size * .20                                                                   # heatrate width for frame
 
+ecg_frame.columnconfigure(0, weight=1)
+ecg_frame.columnconfigure(1, weight=1)
+ecg_frame.columnconfigure(2, weight=1)
+
+#### LEAD II FRAME AND LABEL 
 leadII_label = ttk.Label(ecg_frame,text="LEAD II", foreground="#84f91c")                                                      # Label for LeadII
 leadII_label.grid(row = 0, column = 0, sticky="w")                                                                 # placing leadII
 btm2_frame = ttk.Frame(ecg_frame, height=frame_size_height,width= frame_size_width)                     # frame for leadII signal
-btm2_frame.grid(row = 1, column=0, columnspan=2)
-#btm2_frame.grid_propagate(False)
+btm2_frame.grid(row = 1, column=0)
+###
 
+# LEAD V1 FRAME AND LABEL 
 leadV1_frame = ttk.Label(ecg_frame,text="V1", foreground="#84f91c")                                           # Label for LeadV1
 leadV1_frame.grid(row = 2, column=0, sticky= "w")
 btm3_frame = ttk.Frame(ecg_frame,height=frame_size_height, width=frame_size_width)                     # frame for V1
 btm3_frame.grid(row = 3, column=0, columnspan=2)
-#btm3_frame.grid_propagate(False)
-
+V1_signal_frame = tk.Frame(btm3_frame,height=frame_size_height,width=(frame_size_width))
+V1_signal_frame.grid(row = 0, column=0, columnspan=2)
 btm4_frame = tk.Frame(ecg_frame, height=bot_frame_size_h,                                   # frame for bottom frames
                       width=bot_frame_size_w)
 btm4_frame.grid(row = 4)
-#btm4_frame.grid_propagate(False)
 
+
+### ECG LIVE SIGNAL WITH HR 
 ecg_signal_frame = tk.Frame(btm2_frame,height=frame_size_height,width=(frame_size_width))           # ecg signal frame inside btm2
 ecg_signal_frame.grid(row = 0, column=0, columnspan=2)
-V1_signal_frame = tk.Frame(btm3_frame,height=frame_size_height,width=(frame_size_width))
-V1_signal_frame.grid(row = 0, column=0, columnspan=2)
-
 HR_frame= tk.Frame(btm2_frame,width=hr_width_side,height=100)                                          # frame for heartrate  
 HR_frame.grid(row= 0, column=3)
 HR_canvas = tk.Canvas(HR_frame,highlightthickness=0, bg="black",width = 100,                          # Canvas for HR to display numbers
@@ -544,7 +606,10 @@ d_canvas = tk.Canvas(HR_frame, bg="black",bd=0,highlightcolor="black",          
 d_canvas.grid(row=0, column=0)
 dot = d_canvas.create_oval(2, 2, 18, 18, fill='red', outline= "")                                      # create the dot
 rate = HR_canvas.create_text(50, 50, text="--", font=('Arial', 40), fill= "#99f20f")                    # output the HR
+#####
 
+
+###  BOTTOM FRAME OF ECG FRAME (PULSE, awRR, TPERI)
 pulse_frame = tk.Frame(btm4_frame,width = bot_frame_size_w, height = bot_frame_size_h, padx= 2)
 pulse_frame.grid(row = 0, column=1)
 pulse_canvas = tk.Canvas(pulse_frame, highlightthickness=0, bd= 0, bg="black",                           # establish canvas to draw pulse
@@ -568,12 +633,14 @@ Tperi_canvas = tk.Canvas(Tperi_frame, highlightthickness=0, bd= 0, bg="black",  
 Tperi_canvas.grid(row = 0, column= 0)                                                          
 Tperi = Tperi_canvas.create_text(20,20, text="Tperi", font=('Arial', 15), fill= "#84f91c")              # create pulse label
 Tperi_result = Tperi_canvas.create_text(70,70, text="--", font=('Arial', 50), fill= "#84f91c" )         # create "--" waiting for input
+####
 
 ########save test frame###########
 #save_frame = ttk.LabelFrame(bottom_frame, text="History", width= save_width_size, height=save_height_size)
 #save_frame.grid(row = 0, column= 0)
 #save_frame.grid_propagate(False)
-# disease container 
+
+########################################## disease container ###########################################################
 disease_frame = ttk.LabelFrame(bottom_frame, borderwidth=10, text="DISEASES",height=df_height_size, width=df_width_size)
 disease_frame.grid(row= 0,column=0, sticky= "w")
 disease_frame.grid_propagate(False)
@@ -592,12 +659,14 @@ options = [
         "VF",
         "VFib"
     ] 
-# menu for disease 
+### menu for disease 
 clicked = tk.StringVar()  
 clicked.set( " Heart Rhytms " ) 
 drop = ttk.OptionMenu( disease_frame , clicked , *options )
 drop.place(x = 30, y = 50)
+####################################################################################################################
 
+######################################### MANUAL INPUTS ############################################################
 input_= ttk.LabelFrame(bottom_frame, text= "Input Rates", width= (2*save_width_size), height=save_height_size)
 input_.grid(row = 0, column= 1, columnspan= 2)
 input_.grid_propagate(False)
@@ -648,20 +717,17 @@ button_awRR.grid(row = 10, column= 2)
 placeholder = ttk.LabelFrame(bottom_frame, text= "Saved Test", width=save_width_size, height=save_height_size)
 placeholder.grid(row = 0, column= 3)
 placeholder.grid_propagate(False)
+####################################################################################################################
 
 '''
 #***************************PRINT FRAME********************************
 print_main_frame = ttk.Frame(print_frame)
 print_main_frame.grid(row = 0)
-
-print_main_label = ttk.Label(print_main_frame, text="Print ECG", font=('Time', 30), foreground="white")
-print_main_label.grid(row = 0)
-
-print_frame = ttk.LabelFrame(print_frame, borderwidth=10, text="Editor", height=200, width=500)
+print_frame = ttk.LabelFrame(print_frame, borderwidth=10, text="Editor")
 print_frame.grid(row = 1)
 
 #plot frame
-print_fig, print_ax = plt.subplots(figsize=(6, 4))
+print_fig, print_ax = plt.subplots(figsize=(4, 2))
 print_ax.plot(print_x, print_y)
 print_window_size = 5
 
@@ -670,7 +736,7 @@ canvas = FigureCanvasTkAgg(print_fig, master=print_frame)
 canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
 slider_ax = print_fig.add_axes([0.25, 0.02, 0.65, 0.03], facecolor='lightgoldenrodyellow')
-slider = ttk.Scale(slider_ax, text='Time (s)', from_=0, to = 30 )
+slider = Slider(slider_ax, 'Time (s)', 0, 30 - print_window_size, valinit=0)
 
 slider.on_changed(print_update)
 
@@ -691,8 +757,38 @@ label_to.pack(side=tk.LEFT, padx=5)
 entry_to = ttk.Entry(input_frame)
 entry_to.pack(side=tk.LEFT, padx=5)
 
+label_filename = ttk.Label(print_frame, text="Filename:")
+label_filename.pack(pady=10, padx=10)  
+filename_entry = ttk.Entry(print_frame, width=30) 
+filename_entry.pack(pady=10, padx=10)
+
 submit_button = ttk.Button(print_frame, text="Print", command=print_onPrint_click)
 submit_button.pack(pady=20)
+
+#save_button = ttk.Button(print_frame, text="Save", command=save_to_csv)
+#save_button.pack(pady=0, padx=20)
 '''
+
+
+#***************************SIMULATOR FRAME********************************
+sim_main_frame = ttk.Frame(sim_frame)
+sim_main_frame.pack(padx=10, pady=5) 
+
+sim_main_label = ttk.Label(sim_main_frame, text="Simulator ECG", font=('Time', 30), foreground="white")
+sim_main_label.pack(padx=10) 
+
+simulator_frame = ttk.LabelFrame(sim_frame, borderwidth=10, text="Simulations", height=500, width=500)
+simulator_frame.pack(padx=10, pady=10, side="top", fill="y")
+
+def get_file_names(folder_path):
+    return [file.stem for file in Path(folder_path).iterdir() if file.is_file()]
+
+options_sim = get_file_names('./simulations')
+clicked_sim_menu = tk.StringVar()
+clicked_sim_menu.set( " Simulations " ) 
+save_sim_drop = ttk.OptionMenu( simulator_frame , clicked_sim_menu , *options_sim )
+save_sim_drop.place(x = 60, y = 50)
+
+clicked_sim_menu.trace_add("write", load_saved_simulation)
 
 window.mainloop()
