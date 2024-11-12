@@ -13,6 +13,8 @@ import normal
 from pathlib import Path
 import print_plot
 import csv
+import pyautogui as pgui
+
 
 update_in_progress = False
 # FUNCTION TO GET THE NEW PARAMETERS FROM THE GUI
@@ -153,6 +155,15 @@ def set_parameters_P(wave, var_P_amp,var_P_feq, var_P_per ):
     sp_3 = ttk.Spinbox(parameter_frame, from_=-5, to_=10, increment=0.1, width=7, textvariable=var_P_per, bootstyle= "success")
     sp_3.grid(row=row_per_spin, column=col_per_spin, padx=10,pady=2) 
 
+def new_Window():
+    newWindow= ttk.Window()
+    newWindow.geometry("800x675")
+    newWindow.title(clicked.get())
+    StaticFrame(newWindow).grid()
+    ecg_frame.grid_forget()
+    #StaticFrame(newWindow).grid()
+    
+
 # FUNCTION CREATES NEW WINDOW FOR THE LIVE ECG
 def new_ecg_signal():
         ecg_signal_frame = tk.Frame(btm2_frame, height=frame_size_height,                                      # ecg signal frame inside btm2
@@ -161,6 +172,10 @@ def new_ecg_signal():
 
 
 def ecg_start():
+    # turn off start
+    if (clicked.get() != "Heart Rhytms"):
+        btn_start.config(state="disable")
+
     # disease list need to update since chart shouldnt be next to the ecg signal 
     ecg_list = [["Atrial Flutter", 0],["VF", 1],["Atrial Tachycardia",2],["Sinus Arrhythmia",1],["A Fib",0],["Normal Rhythm", 2],["VT", 6],["Multifocal Atrial Tachycardia",7],
                 ["VFib",1], ["Bradycardia",4], ["Tachycardia", 5]]
@@ -172,8 +187,11 @@ def ecg_start():
     # update parameters 
     # create function to update the parameters for each wave depending on the disease selected 
     #live_signal = animation(child_window, ecg_num)
-    ecg_frame.config(text=clicked.get())
-    live_signal = animation(ecg_num)
+    if (clicked.get() == "Heart Rhytms"):
+        tk.messagebox.showerror("Error", "Please Select Disease")
+    else:
+        ecg_frame.config(text=clicked.get())
+        animation(ecg_num)
 
 print_x = []
 print_y = []
@@ -216,10 +234,14 @@ def animation(ecg_num):
     y2 = np.array(y)
     inverse_y2 = -y2
 
+    # previous
+    t_p = np.linspace(-2,2,1200)
+    x = (1/1000)*t_p + 0.9
+    y_p = np.linspace(0.9,0.9,1200)
+
     fig2, axis2 = plt.subplots(figsize=(7,2),facecolor="#2B3F51")
     plt.axis("off")
-    
-    
+
     # function for Funcanimation 
     def update(frame):
         global y, print_y
@@ -233,27 +255,30 @@ def animation(ecg_num):
             update_rate()
             update_requested = False 
         # update the new points after each frame
+        
         animated_plot.set_data(t[:frame], y[:frame])
+        pulse_sig.set_data([x[frame]], [0])
         animated_plot2.set_data(t2[:frame], inverse_y2[:frame])
         
-        return animated_plot, animated_plot2
+        return animated_plot, animated_plot2, pulse_sig
     
-    axis.set_xlim([min(t),max(t)])                                # set the limits of time for x
-    axis.set_ylim([min(y),max(y)])                                         # Set limit for amplitude for y 
+    axis.set_xlim([-2,2])                                # set the limits of time for x
+    axis.set_ylim([0,2.5])                                         # Set limit for amplitude for y 
     axis2.set_xlim([min(t2), max(t2)])                                # set the limits of time for x
     axis2.set_ylim([min(inverse_y2), max(inverse_y2)]) 
     plt.xticks(np.arange(min(t), max(t)+1, 0.25))
     plt.yticks(np.arange(min(y)-1,max(y), 0.25)) 
     animated_plot, = axis.plot([],[],color="#84f91c")
+    pulse_sig, = axis.plot([],[],"-", markersize= 20, color="red")
     animated_plot2, = axis2.plot([],[],color="#84f91c")
     axis.set_facecolor("#2B3F51")
     axis2.set_facecolor("#2B3F51")                                   # set background of graph as black
 
 
-
     # call animation
     animate = FuncAnimation(fig= fig1, func= update,frames=len(t),interval=10, repeat="False")
     animate2 = FuncAnimation(fig= fig2, func= update,frames=len(t),interval=10, repeat="False")
+
     
     # Embed fig in canvas
     canvas = FigureCanvasTkAgg(fig1, ecg_signal_frame)
@@ -268,7 +293,7 @@ def animation(ecg_num):
     # dot blicking
     def blicking():
         cur_color = d_canvas.itemcget(dot, 'fill')
-        new_color = 'red' if cur_color == 'black' else 'black'
+        new_color = 'red' if cur_color == '#2B3F51' else '#2B3F51'
         d_canvas.itemconfig(dot, fill=new_color)
         d_canvas.after(1000,blicking)
 
@@ -404,11 +429,40 @@ def load_saved_simulation(*args):
     t = x_values
     print_onECG_change()
 
-########Main window for ECG###############
+#######################  Main window for ECG  ########################
 window = ttk.Window(themename = "superhero")
 window.title("ECG Simulator")
 window.attributes('-fullscreen',True)
 
+class StaticFrame(tk.Frame):
+    def __init__(self,master,*args,**kwargs):
+        tk.Frame.__init__(self,master,*args,**kwargs)
+
+        #screen size
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+
+        # size for frames
+        left_width = int(screen_width * 0.10)
+        right_width = int(screen_height * 0.80)
+
+        left_f = ttk.Frame(self, width= left_width, height= screen_height)
+        left_f.grid(row = 0, column = 0)
+        left_f.grid_propagate(False)
+        right_f = ttk.Frame(self, width= right_width, height= screen_height)
+        right_f.grid(row = 0, column = 1)
+
+        # close window
+        btn_quit = ttk.Button(left_f, text="Exit", style="Q.TButton", command=quit)
+        btn_x_quit = int((left_width/4))
+        btn_quit.config(width= 7)
+        btn_quit.place(x= btn_x_quit,y=1000)
+
+        main_label = ttk.Label(self, text="Electrocardiogram Simulator", font=('Time', 30), foreground="white")
+        main_label.grid(row = 0, sticky="n")
+     
+
+#StaticFrame(window).grid()
 #screen size
 screen_width = window.winfo_screenwidth()
 screen_height = window.winfo_screenheight()
@@ -425,6 +479,14 @@ ecg_width_size = int(right_width * .60)
 ecg_height_size = int(screen_height * .65)
 save_width_size = int(right_width * .33)
 save_height_size = int(screen_height * .30)
+
+# button clicked
+def on_click(event):
+    x, y = pgui.position()
+    if ((780 <= x <= 1350) & (150 <= y <= 300)):
+        new_Window()
+
+window.bind("<Button-1>", on_click)
 
 #quit
 def on_escape(event):
@@ -462,6 +524,8 @@ top_frame.columnconfigure(2, weight=1)
 
 bottom_frame = ttk.Frame(right_frame, width = right_width, height= (screen_height* .25))
 bottom_frame.grid(row = 1)
+bottom_frame.rowconfigure(0, weight=1)
+bottom_frame.rowconfigure(1, weight=1)
 
 main_label = ttk.Label(top_frame, text="Electrocardiogram Simulator", font=('Time', 30), foreground="white")
 main_label.grid(row = 0, sticky="n")
@@ -560,7 +624,6 @@ var_T_per.trace_add("write", lambda *args: update_tk_parameters("t", "t", var_T_
 parameter_values = [var.get() for var in parameters]
 
 ########live ecg frame############
-
 ### SIZE FOR FRAME 
 frame_size_width = ecg_width_size * .80                                                                # width for signal frame
 frame_size_height = ecg_height_size * .35                                                              # height for signal frame
@@ -583,25 +646,25 @@ btm2_frame.grid(row = 1, column=0)
 leadV1_frame = ttk.Label(ecg_frame,text="V1", foreground="#84f91c")                                           # Label for LeadV1
 leadV1_frame.grid(row = 2, column=0, sticky= "w")
 btm3_frame = ttk.Frame(ecg_frame,height=frame_size_height, width=frame_size_width)                     # frame for V1
-btm3_frame.grid(row = 3, column=0, columnspan=2)
-V1_signal_frame = tk.Frame(btm3_frame,height=frame_size_height,width=(frame_size_width))
-V1_signal_frame.grid(row = 0, column=0, columnspan=2)
-btm4_frame = tk.Frame(ecg_frame, height=bot_frame_size_h,                                   # frame for bottom frames
-                      width=bot_frame_size_w)
+btm3_frame.grid(row = 3, column=0)
+V1_signal_frame = tk.Frame(btm3_frame,height=frame_size_height,width=frame_size_width)
+V1_signal_frame.grid(row = 0, column=0, sticky='w')
+
+btm4_frame = ttk.Frame(ecg_frame, height=bot_frame_size_h,width=bot_frame_size_w)
 btm4_frame.grid(row = 4)
 
 
 ### ECG LIVE SIGNAL WITH HR 
-ecg_signal_frame = tk.Frame(btm2_frame,height=frame_size_height,width=(frame_size_width))           # ecg signal frame inside btm2
-ecg_signal_frame.grid(row = 0, column=0, columnspan=2)
-HR_frame= tk.Frame(btm2_frame,width=hr_width_side,height=100)                                          # frame for heartrate  
-HR_frame.grid(row= 0, column=3)
-HR_canvas = tk.Canvas(HR_frame,highlightthickness=0, bg="black",width = 100,                          # Canvas for HR to display numbers
+ecg_signal_frame = tk.Frame(btm2_frame,height=frame_size_height,width=frame_size_width)           # ecg signal frame inside btm2
+ecg_signal_frame.grid(row = 0, column=0)
+HR_frame= tk.Frame(ecg_frame,width=hr_width_side,height=100)                                          # frame for heartrate  
+HR_frame.grid(row= 1, column=1)
+HR_canvas = tk.Canvas(HR_frame,highlightthickness=0, bg="#84f91c",width = 100,                          # Canvas for HR to display numbers
                      height=100)
 HR_canvas.grid(row = 0, column=2)
 Heart_rate = HR_canvas.create_text(10,10, text="HR", font=('Arial', 15), fill= "red")                   # label for heartrate
 
-d_canvas = tk.Canvas(HR_frame, bg="black",bd=0,highlightcolor="black",                                 # canvas to draw the red circle
+d_canvas = tk.Canvas(HR_frame, bg="#84f91c",bd=0,highlightcolor="#84f91c",                                 # canvas to draw the red circle
                      highlightthickness=0, width = 18, height=20)
 d_canvas.grid(row=0, column=0)
 dot = d_canvas.create_oval(2, 2, 18, 18, fill='red', outline= "")                                      # create the dot
@@ -790,5 +853,7 @@ save_sim_drop = ttk.OptionMenu( simulator_frame , clicked_sim_menu , *options_si
 save_sim_drop.place(x = 60, y = 50)
 
 clicked_sim_menu.trace_add("write", load_saved_simulation)
+
+
 
 window.mainloop()
