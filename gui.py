@@ -393,7 +393,7 @@ def print_onPrint_click():
 
    
 # **************** Simulator Frame Functions ********************
-'''
+
 def save_to_csv(filename='ecg_save', folder_path='./simulations'):
     global print_x, print_y
     if tk.filename_entry.get():
@@ -408,7 +408,6 @@ def save_to_csv(filename='ecg_save', folder_path='./simulations'):
             writer.writerow([x_value, y_value])
 
     print(f"Data saved to {file_path}")
-'''
 
 def load_saved_simulation(*args):
     global print_x, print_y, y, t
@@ -443,20 +442,20 @@ class StaticFrame(tk.Frame):
         screen_height = self.winfo_screenheight()
 
         # size for frames
-        left_width = int(screen_width * 0.10)
-        right_width = int(screen_height * 0.80)
+        #left_width = int(screen_width * 0.10)
+        #right_width = int(screen_height * 0.80)
 
-        left_f = ttk.Frame(self, width= left_width, height= screen_height)
-        left_f.grid(row = 0, column = 0)
-        left_f.grid_propagate(False)
-        right_f = ttk.Frame(self, width= right_width, height= screen_height)
-        right_f.grid(row = 0, column = 1)
+        #left_f = ttk.Frame(self, width= left_width, height= screen_height)
+        #left_f.grid(row = 0, column = 0)
+        #left_f.grid_propagate(False)
+        #right_f = ttk.Frame(self, width= right_width, height= screen_height)
+        #right_f.grid(row = 0, column = 1)
 
         # close window
-        btn_quit = ttk.Button(left_f, text="Exit", style="Q.TButton", command=quit)
-        btn_x_quit = int((left_width/4))
-        btn_quit.config(width= 7)
-        btn_quit.place(x= btn_x_quit,y=1000)
+        #btn_quit = ttk.Button(left_f, text="Exit", style="Q.TButton", command=quit)
+        #btn_x_quit = int((left_width/4))
+        #btn_quit.config(width= 7)
+        #btn_quit.place(x= btn_x_quit,y=1000)
 
         main_label = ttk.Label(self, text="Electrocardiogram Simulator", font=('Time', 30), foreground="white")
         main_label.grid(row = 0, sticky="n")
@@ -480,14 +479,16 @@ ecg_height_size = int(screen_height * .65)
 save_width_size = int(right_width * .33)
 save_height_size = int(screen_height * .30)
 
+'''
 # button clicked
 def on_click(event):
     x, y = pgui.position()
-    if ((780 <= x <= 1350) & (150 <= y <= 300)):
-        new_Window()
+    if (frames.values() == "Electrocardiogram"):
+        if ((780 <= x <= 1350) & (150 <= y <= 300)):
+            new_Window()
 
 window.bind("<Button-1>", on_click)
-
+'''
 #quit
 def on_escape(event):
     window.quit() 
@@ -777,12 +778,12 @@ TP_entry.grid(row = 9, column= 2,)
 button_awRR= ttk.Button(input_, text="Enter", command= manual_)
 button_awRR.grid(row = 10, column= 2)
 
-placeholder = ttk.LabelFrame(bottom_frame, text= "Saved Test", width=save_width_size, height=save_height_size)
-placeholder.grid(row = 0, column= 3)
-placeholder.grid_propagate(False)
+#placeholder = ttk.LabelFrame(bottom_frame, text= "Saved Test", width=save_width_size, height=save_height_size)
+#placeholder.grid(row = 0, column= 3)
+#placeholder.grid_propagate(False)
 ####################################################################################################################
 
-'''
+
 #***************************PRINT FRAME********************************
 print_main_frame = ttk.Frame(print_frame)
 print_main_frame.grid(row = 0)
@@ -830,8 +831,6 @@ submit_button.pack(pady=20)
 
 #save_button = ttk.Button(print_frame, text="Save", command=save_to_csv)
 #save_button.pack(pady=0, padx=20)
-'''
-
 
 #***************************SIMULATOR FRAME********************************
 sim_main_frame = ttk.Frame(sim_frame)
