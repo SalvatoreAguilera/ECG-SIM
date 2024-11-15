@@ -747,14 +747,15 @@ disease_w = (main_w * 0.40)
 disease_h = (main_h * 0.30)
 
 ####### MAIN SIDE FRAMES ########
-master = ttk.Frame(window,
+master_frame = ttk.Frame(window,
                    width= screen_width,
                    height= screen_height)                       # frame under title
-master.grid(row = 1)
-master.columnconfigure(1,weight=1)
+master_frame.grid(row = 1)
+master_frame.columnconfigure(1,weight=1)
+master_frame.rowconfigure(0, weight=1)
+master_frame.rowconfigure(1,weight=2)
 
-
-main_frame = ttk.LabelFrame(master,
+main_frame = ttk.LabelFrame(master_frame,
                        width = main_w,
                        height= main_h)                          # main side
 main_frame.grid(row = 0, column=1)
@@ -773,7 +774,7 @@ content_area = ttk.Frame(main_frame,
                               height = content_h)               # content frame
 content_area.grid(row = 0, column = 1)                         
 content_area.grid_propagate(False)
-
+resize(content_area, 2, 2)
 disease_frame = ttk.LabelFrame(main_frame,
                                text= "Disease Selection",
                                width= disease_w,
@@ -790,7 +791,7 @@ manual_frame.grid_propagate(False)
 
 
 ############## DASH BOARD ################
-dash_frame = ttk.LabelFrame(master, 
+dash_frame = ttk.LabelFrame(master_frame, 
                        width = dash_w, 
                        height= dash_h)
 dash_frame.grid(row = 0, column = 0)                            # dash side
@@ -928,7 +929,7 @@ var_T_per.trace_add("write", lambda *args: update_tk_parameters("t", "t", var_T_
 parameter_values = [var.get() for var in parameters]
 
 #################### ECG SIGNAL ###############
-resize(ecg_frame, 4, 2)
+resize(ecg_frame, 5, 2)
 ecg_frame.grid()
 ecg_frame.grid_propagate(False)
 
@@ -969,16 +970,22 @@ d_canvas = tk.Canvas(HR_frame,
                      bd=0,
                      highlightcolor="#84f91c",                        # canvas to draw the red circle
                      highlightthickness=0, 
-                     width = 18, 
+                     width =20, 
                      height=20)
 d_canvas.grid(row=0, column=0)
-dot = d_canvas.create_oval(2, 2, 18, 18, 
+dot = d_canvas.create_oval(2, 2, 15, 15, 
                            fill='red', 
                            outline= "")                               # create the dot
 rate = HR_canvas.create_text(50, 50, 
                              text="--", 
                              font=('Arial', 40),
                              fill= "#99f20f")                         # output the HR
+leadII_frame.columnconfigure(0, weight=2)
+leadII_frame.columnconfigure(1, weight=1)
+leadII_frame.rowconfigure(0, weight=1)
+HR_frame.columnconfigure(0, weight=1)
+HR_frame.columnconfigure(1, weight=2)
+
 #####
 
 leadV1_label = ttk.Label(ecg_frame, 
@@ -990,6 +997,8 @@ leadV1_frame= ttk.Frame(ecg_frame,
                         width= content_w * 0.85,
                         height= (content_h*0.3))
 leadV1_frame.grid(row =3, column=0, sticky="w")
+leadV1_frame.columnconfigure(0, weight=1)
+leadV1_frame.rowconfigure(0, weight=1)
 
 rate_frames = ttk.Frame(ecg_frame,
                         width= content_w,
@@ -1054,7 +1063,7 @@ Tperi_result = Tperi_canvas.create_text(70,70,
                                         font=('Arial', 50), 
                                         fill= "#84f91c" )         # create "--" waiting for input
 resize(rate_frames,1,3)
-
+resize(ecg_frame,4, 4)
 ############ DISEASE FRAME #############
 disease_frame.grid_propagate(False)
 def search(event):                                                        # search in combo
@@ -1169,8 +1178,13 @@ manual_frame.rowconfigure(4, weight=1)
 #***************************PRINT FRAME********************************
 print_main_frame = ttk.Frame(print_frame)
 print_main_frame.grid(row = 0)
+
+print_main_frame.columnconfigure(0, weight=1)
+print_main_frame.rowconfigure(0, weight=1)
 print_frame = ttk.LabelFrame(print_frame, borderwidth=10, text="Editor")
 print_frame.grid(row = 1)
+
+print_frame.columnconfigure(1, weight= 1)
 
 #plot frame
 print_fig, print_ax = plt.subplots(figsize=(4, 2))
@@ -1179,7 +1193,7 @@ print_window_size = 5
 
 print_ax.set_xlim([0, print_window_size])
 canvas = FigureCanvasTkAgg(print_fig, master=print_frame)
-canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+canvas.get_tk_widget().grid(row = 1)
 
 slider_ax = print_fig.add_axes([0.25, 0.02, 0.65, 0.03], facecolor='lightgoldenrodyellow')
 slider = Slider(slider_ax, 'Time (s)', 0, 720 - print_window_size, valinit=0)
@@ -1187,44 +1201,49 @@ slider = Slider(slider_ax, 'Time (s)', 0, 720 - print_window_size, valinit=0)
 slider.on_changed(print_update)
 
 label_range = ttk.Label(print_frame, text="Range")
-label_range.pack(pady=10, padx=10)
+label_range.grid(row= 2, column=0)
 
 input_frame = ttk.Frame(print_frame)
-input_frame.pack()
+input_frame.grid(row = 3, column=0)
+resize(input_frame, 1, 4)
 
 label_from = ttk.Label(input_frame, text="From:")
-label_from.pack(side=tk.LEFT, padx=5)
+label_from.grid(row = 0, column=0)
 entry_from = ttk.Entry(input_frame, width=10)
-entry_from.pack(side=tk.LEFT, padx=5)
+entry_from.grid(row = 0, column=1)
 
 
 label_to = ttk.Label(input_frame, text="To:")
-label_to.pack(side=tk.LEFT, padx=5)
+label_to.grid(row =0, column= 2)
 entry_to = ttk.Entry(input_frame)
-entry_to.pack(side=tk.LEFT, padx=5)
+entry_to.grid(row = 0, column= 3)
 
 label_filename = ttk.Label(print_frame, text="Filename:")
-label_filename.pack(pady=10, padx=10)  
+label_filename.grid(row = 4, column=0)  
 filename_entry = ttk.Entry(print_frame, width=30) 
-filename_entry.pack(pady=10, padx=10)
+filename_entry.grid(row = 5, column= 0)
 
-submit_button = ttk.Button(print_frame, text="Print", command=print_onPrint_click)
-submit_button.pack(pady=20)
+btn_print_frame= ttk.Frame(print_frame)
+btn_print_frame.grid(row= 6, column= 0)
+submit_button = ttk.Button(btn_print_frame, text="Print", command=print_onPrint_click)
+submit_button.grid(row = 0, column= 0, padx= 5)
+save_button = ttk.Button(btn_print_frame, text="Save", command=save_to_csv)
+save_button.grid(row = 0, column=1, padx= 5)
+btn_print_frame.columnconfigure(0, weight=1)
+btn_print_frame.columnconfigure(1, weight=1)
 
-save_button = ttk.Button(print_frame, text="Save", command=save_to_csv)
-save_button.pack(pady=0, padx=20)
-
-
+resize(print_frame, 7, 1)
 
 #***************************SIMULATOR FRAME********************************
 sim_main_frame = ttk.Frame(sim_frame)
-sim_main_frame.pack(padx=10, pady=5) 
+sim_main_frame.grid(row = 0, column=0) 
 
 sim_main_label = ttk.Label(sim_main_frame, text="Saved ECG's", font=('Time', 30), foreground="white")
-sim_main_label.pack(padx=10) 
+sim_main_label.grid(row = 0, column=0) 
 
 simulator_frame = ttk.LabelFrame(sim_frame, borderwidth=10, text="Simulations", height=content_h * 0.6, width=content_w*0.7)
-simulator_frame.pack(padx=10, pady=10, side="top", fill="y")
+simulator_frame.grid(row = 1, column=0)
+simulator_frame.grid_propagate(False)
 
 def get_file_names(folder_path):
     return [file.stem for file in Path(folder_path).iterdir() if file.is_file()]
@@ -1233,30 +1252,37 @@ options_sim = get_file_names('./simulations')
 clicked_sim_menu = tk.StringVar()
 clicked_sim_menu.set( " Rhythms " ) 
 save_sim_drop = ttk.OptionMenu( simulator_frame , clicked_sim_menu , *options_sim, command=load_saved_simulation)
-save_sim_drop.place(x = 60, y = 50)
+save_sim_drop.grid(row= 3, column=0)
 
 sim_sub_frame = ttk.Frame(sim_frame)
-sim_sub_frame.pack(padx=10, pady=5) 
+sim_sub_frame.grid(row = 2, column=0) 
 sim_sub_label = ttk.Label(sim_sub_frame, text="Create Simulation", font=('Time', 30), foreground="white")
-sim_sub_label.pack(padx=10) 
+sim_sub_label.grid(row = 0, column=0)
 simulator_subframe = ttk.LabelFrame(sim_frame, borderwidth=10, text="Simulations", height=500, width=500)
-simulator_subframe.pack(padx=10, pady=10, side="top", fill="y")
+simulator_subframe.grid(row = 3, column=0)
 
 sim_label_from = ttk.Label(simulator_subframe, text="Rhythm:")
-sim_label_from.pack(side=tk.LEFT, padx=5)
+sim_label_from.grid(row=0, column=0)
 sim_entry_from = ttk.Entry(simulator_subframe, width=10)
-sim_entry_from.pack(side=tk.LEFT, padx=5)
+sim_entry_from.grid(row = 0, column=1)
 
 sim_label_time = ttk.Label(simulator_subframe, text="Time:")
-sim_label_time.pack(side=tk.LEFT, padx=5)
+sim_label_time.grid(row = 0, column=2)
 sim_entry_time = ttk.Entry(simulator_subframe)
-sim_entry_time.pack(side=tk.LEFT, padx=5)
+sim_entry_time.grid(row = 0, column=3)
 sim_time_options = [option.lower() for option in options]
 sim_time_options.append("current")
+simulator_subframe.columnconfigure(0, weight= 1)
+simulator_subframe.columnconfigure(1, weight= 3)
+simulator_subframe.columnconfigure(2, weight= 1)
+simulator_subframe.columnconfigure(3, weight= 3)
 
 sim_submit_button = ttk.Button(simulator_subframe, text="Submit", command=sim_from_to_time)
-sim_submit_button.pack(pady=0, padx=20)
-    
+sim_submit_button.grid(row= 2, column= 0)
+resize(sim_sub_frame, 3, 4)
+resize(sim_main_frame, 2, 4)
+
+resize(sim_frame, 3, 1)
 #clicked_sim_menu.trace_add("write", load_saved_simulation)
 
 #***************************OTHER FRAME********************************
