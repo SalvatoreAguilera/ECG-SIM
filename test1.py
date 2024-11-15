@@ -9,7 +9,7 @@ import matplotlib.pylab as plt
 from matplotlib.widgets import Slider
 from matplotlib.animation import FuncAnimation
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg) 
-import normal
+import normal1 as normal
 from pathlib import Path
 import print_plot
 import csv
@@ -205,7 +205,7 @@ def animation(window,ecg_num):
         y = normal.vfib()
     else:
         t = np.linspace(-2,2,1200)
-        y = normal.update_ecg()
+    #    y = normal.update_ecg()
          
     get_new_parameters(parameters)
     print_y.extend(y)
@@ -218,6 +218,8 @@ def animation(window,ecg_num):
         global y, print_y
         nonlocal hr, update_requested
         if frame == len(t) - 1 and not update_requested:
+            if len(y) > 1200:
+                y = y[1200:]
             print_y.extend(y)
         if frame == len(t) - 1 and update_requested:
             y = normal.update_ecg()
@@ -384,6 +386,49 @@ def load_saved_simulation(*args):
     y = y_values
     t = x_values
     print_onECG_change()
+
+def sim_from_to_time():
+    global y, sim_time_options
+    rhythm = (sim_entry_from.get()).lower()
+    time_val = int(sim_entry_time.get())
+
+    if not rhythm or not time_val:
+        print('fail')
+        return
+    if sim_time_options.count(rhythm) == 0:
+        print('fail2')
+        return
+
+    y = normal.normal()
+    goal = []
+    if rhythm == "sinus arrhythmia":
+        goal = normal.sinus_arrythmia()
+    elif rhythm == "bradycardia":
+        goal = normal.sinus_brady()
+    elif rhythm == "tachycardia":
+        goal = normal.sinus_tachy()
+    elif rhythm == "vfib":
+        goal = normal.vfib()
+    elif rhythm == "VT":
+        goal = normal.VT()
+    elif rhythm == "atrial tachycardia":
+        goal = normal.atrial_tachy()
+
+
+    intervals = (time_val*60) // 12  
+    extended_y = list(normal.normal())
+    resid = []
+    resid_list = []
+    for i in range(len(y)):
+        resid.append((goal[i] - y[i])/intervals)
+    resid_list = resid
+    for i in range(intervals):
+        extended_y.extend(resid_list+y)
+        resid_list = [x+y for x,y in zip(resid_list,resid)]
+
+    y = extended_y
+    print(len(y))
+
     
 
 # **************** CREATE MAIN WINDOW ********************
@@ -595,6 +640,25 @@ clicked_sim_menu = StringVar()
 clicked_sim_menu.set( " Simulations " ) 
 save_sim_drop = OptionMenu( simulator_frame , clicked_sim_menu , *options_sim, command=load_saved_simulation)
 save_sim_drop.place(x = 60, y = 50)
+save_sim_drop.pack(pady=30)
 
+sim_label_from = ttk.Label(simulator_frame, text="Rhythm:")
+sim_label_from.pack(side=tk.LEFT, padx=5)
+sim_entry_from = ttk.Entry(simulator_frame, width=10)
+sim_entry_from.pack(side=tk.LEFT, padx=5)
+
+sim_label_time = ttk.Label(simulator_frame, text="Time:")
+sim_label_time.pack(side=tk.LEFT, padx=5)
+sim_entry_time = ttk.Entry(simulator_frame)
+sim_entry_time.pack(side=tk.BOTTOM, padx=5)
+sim_time_options = [option.lower() for option in options]
+
+sim_submit_button = ttk.Button(simulator_frame, text="Submit", command=sim_from_to_time)
+sim_submit_button.pack(pady=20)
+    
+    
+    
+    
+       
 #clicked_sim_menu.trace_add("write", load_saved_simulation)
 root.mainloop()
