@@ -419,9 +419,12 @@ print_x = []
 print_y = []
 t = np.linspace(-2,2,1200)
 y = normal.normal()
+# inverse
+t2 = np.linspace(-2,2,1200)
+inverse_y2 = -y
 update_requested = False
 def animation(ecg_num,widgets, copy):
-    global t, y, print_y, print_x, update_requested
+    global t, y, t2, inverse_y2,print_y, print_x, update_requested
     if not copy:
         print_y = []
 
@@ -454,11 +457,6 @@ def animation(ecg_num,widgets, copy):
     fig1, axis = plt.subplots(figsize=(6,2),facecolor="#2B3F51")                   # background of fig black
     plt.axis("off")
 
-    # inverse
-    t2 = np.linspace(-2,2,1200)
-    y2 = np.array(y)
-    inverse_y2 = -y2
-
     # previous
     t_p = np.linspace(-2,2,1200)
     x = (1/1000)*t_p + 0.9
@@ -469,8 +467,8 @@ def animation(ecg_num,widgets, copy):
 
     # function for Funcanimation 
     def update(frame):
-        global y, print_y, update_requested
-        nonlocal hr
+        global y, inverse_y2, print_y, update_requested
+        nonlocal hr, pulse_
         
         if frame == len(t) - 1 and not update_requested:
             if len(y) > 1200:
@@ -479,15 +477,24 @@ def animation(ecg_num,widgets, copy):
                 print_y.extend(y)
         if frame == len(t) - 1 and update_requested:
             y = normal.update_ecg()
-            hr = normal.get_HR()
+            inverse_y2 = -y
+            if (HR_checker.get() == 1):
+                hr = hr_entry.get()
+            else:
+                hr = normal.get_HR()
+            widgets['HR_canvas'].after(100,update_rate)
             if not copy:
                 print_y.extend(y)
-            widgets['HR_canvas'].after(100,update_rate)
             update_requested = False 
-        # update the new points after each frame
-        
+        # update the new points after each frame)
+        '''if (pulse_checker.get() == 1):
+            pulse_ = pulse_entry.get()
+        else:
+            pulse_ = 0
+        widgets['pulse_canvas'].after(100,update_rate)'''
+
         animated_plot.set_data(t[:frame], y[:frame])
-        pulse_sig.set_data([x[frame]], [0])
+        #pulse_sig.set_data([x[frame]], [0])
         animated_plot2.set_data(t2[:frame], inverse_y2[:frame])
         
         return animated_plot, animated_plot2, pulse_sig
@@ -536,28 +543,32 @@ def animation(ecg_num,widgets, copy):
         widgets['Tperi_canvas'].itemconfig(widgets['Tperi_result'], text=str(Tp))
 
     # check for manual input 
-    if (HR_checker.get() == 1):
+    if (all_checker.get() == 1):
         hr = hr_entry.get()
-    else:
-        hr = normal.get_HR()
-    if (pulse_checker.get()==1):
         pulse_ = pulse_entry.get()
-    else:
-        pulse_ = 0
-    if ( awRR_checker.get() == 1):
         awRR_ = awRR_entry.get()
-    else:
-        awRR_ = 0
-
-    if (TP_checker.get() == 1):
         Tp = TP_entry.get()
     else:
-        Tp = 0
+        if (HR_checker.get() == 1):
+            hr = hr_entry.get()
+        else:
+            hr = normal.get_HR()
+        if (pulse_checker.get()==1):
+            pulse_ = pulse_entry.get()
+        else:
+            pulse_ = 0
+        if ( awRR_checker.get() == 1):
+            awRR_ = awRR_entry.get()
+        else:
+            awRR_ = 0
+
+        if (TP_checker.get() == 1):
+            Tp = TP_entry.get()
+        else:
+            Tp = 0
     
 
     widgets['HR_canvas'].after(11000,update_rate)
-
-    
 
     # buttom frame
     def on_click_exit():
@@ -565,8 +576,8 @@ def animation(ecg_num,widgets, copy):
         combo.set(" Heart Rhythms ")
         print_x = np.linspace(0, 4*(len(print_y)/1200), len(print_y))
         btn_start.config(state="normal")
-        if not copy:
-            print_onECG_change()
+        #if not copy:
+        #    print_onECG_change()
         if 'window' in widgets:
             widgets['window'].destroy()
         else:
@@ -578,7 +589,9 @@ def animation(ecg_num,widgets, copy):
             widgets['HR_canvas'].itemconfig(widgets['rate'], text="")
             widgets['pulse_canvas'].itemconfig(widgets['pulse_result'], text="")
             widgets['awRR_canvas'].itemconfig(widgets['awRR_result'], text="")
-            widgets['Tperi_canvas'].itemconfig(widgets['Tperi_result'], text="")       
+            widgets['Tperi_canvas'].itemconfig(widgets['Tperi_result'], text="")
+
+        
             
         #ecg_signal_frame.destroy()
     if not copy:
@@ -749,9 +762,9 @@ master_frame = ttk.Frame(window,
                    width= screen_width,
                    height= screen_height)                       # frame under title
 master_frame.grid(row = 1)
-master_frame.columnconfigure(1,weight=1)
+master_frame.columnconfigure(1, weight=2)
 master_frame.rowconfigure(0, weight=1)
-master_frame.rowconfigure(1,weight=2)
+master_frame.rowconfigure(1,weight=1)
 
 main_frame = ttk.LabelFrame(master_frame,
                        width = main_w,
@@ -833,6 +846,7 @@ title_dash = ttk.Frame(dash_frame,
                        width= dash_w,
                        height = (dash_h * 0.30))                # frame for switch
 title_dash.grid(row = 1, column=0)                               # options 
+title_dash.columnconfigure(0, weight= 1)
 
 buttons = [
     ("Electrocardiogram", lambda: 
@@ -850,11 +864,8 @@ for text, cmd in buttons:
     btn.grid(row= btnum, column=0, padx=30)
     btnum += 1
     title_dash.grid_propagate(False)
-dash_frame.rowconfigure(0, weight=1)
-dash_frame.rowconfigure(1, weight=1)
-dash_frame.rowconfigure(2, weight=1)
-dash_frame.rowconfigure(3, weight=1)
-dash_frame.rowconfigure(4, weight=3)
+dash_frame.columnconfigure(0, weight= 1)
+dash_frame.rowconfigure(4, weight=1)
 
 ecg_frame = ttk.LabelFrame(content_area,
                            text="LIVE ECG",
@@ -1236,7 +1247,6 @@ btn_print_frame.columnconfigure(0, weight=1)
 btn_print_frame.columnconfigure(1, weight=1)
 
 resize(print_frame, 7, 1)
-
 #***************************SIMULATOR FRAME********************************
 sim_main_frame = ttk.Frame(sim_frame)
 sim_main_frame.grid(row = 0, column=0) 
