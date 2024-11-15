@@ -578,9 +578,7 @@ def animation(ecg_num,widgets, copy):
             widgets['HR_canvas'].itemconfig(widgets['rate'], text="")
             widgets['pulse_canvas'].itemconfig(widgets['pulse_result'], text="")
             widgets['awRR_canvas'].itemconfig(widgets['awRR_result'], text="")
-            widgets['Tperi_canvas'].itemconfig(widgets['Tperi_result'], text="")
-
-        
+            widgets['Tperi_canvas'].itemconfig(widgets['Tperi_result'], text="")       
             
         #ecg_signal_frame.destroy()
     if not copy:
@@ -627,7 +625,7 @@ def print_onPrint_click():
     print_list_y = print_y_np[(print_x_np >= start) & (print_x_np <= end)]
     end = end - start
     print_plot.plot_ecg(print_list_y, end, filename_entry.get())
-   
+
 # **************** Simulator Frame Functions ********************
 
 def save_to_csv(filename='ecg_save', folder_path='./simulations'):
@@ -929,7 +927,7 @@ var_T_per.trace_add("write", lambda *args: update_tk_parameters("t", "t", var_T_
 parameter_values = [var.get() for var in parameters]
 
 #################### ECG SIGNAL ###############
-resize(ecg_frame, 5, 2)
+#resize(ecg_frame, 5, 2)
 ecg_frame.grid()
 ecg_frame.grid_propagate(False)
 
@@ -937,7 +935,8 @@ leadII_label = ttk.Label(ecg_frame,
                          text="Lead II", 
                          font=("Time", 15),
                          foreground="#84f91c")                             # leadII label
-leadII_label.grid(row = 0, column=0, sticky="w")
+leadII_label.grid(row = 0, column=0, sticky="w", pady=2)
+
 leadII_frame= ttk.Frame(ecg_frame,
                         width= (content_w),
                         height= (content_h*0.3))
@@ -945,8 +944,8 @@ leadII_frame.grid(row =1, column=0, columnspan=1, sticky="w")             # main
 leadII_frame.grid_propagate(False)                                        # live II and HR
 
 II_frame = ttk.Frame(leadII_frame,
-                                  width= (content_w*0.85),
-                                  height = (content_h * 0.3))           # II 
+                    width= (content_w*0.85),
+                    height = (content_h * 0.3))                           # II 
 II_frame.grid(row = 0, column=0)
 HR_frame= ttk.Frame(leadII_frame,
                    width=(content_w*0.15),
@@ -980,11 +979,9 @@ rate = HR_canvas.create_text(50, 50,
                              text="--", 
                              font=('Arial', 40),
                              fill= "#99f20f")                         # output the HR
-leadII_frame.columnconfigure(0, weight=2)
-leadII_frame.columnconfigure(1, weight=1)
 leadII_frame.rowconfigure(0, weight=1)
-HR_frame.columnconfigure(0, weight=1)
-HR_frame.columnconfigure(1, weight=2)
+leadII_frame.rowconfigure(1, weight=1)
+leadII_frame.columnconfigure(1,weight=5)
 
 #####
 
@@ -1063,7 +1060,13 @@ Tperi_result = Tperi_canvas.create_text(70,70,
                                         font=('Arial', 50), 
                                         fill= "#84f91c" )         # create "--" waiting for input
 resize(rate_frames,1,3)
-resize(ecg_frame,4, 4)
+ecg_frame.grid_columnconfigure(0,weight=1)
+#ecg_frame.grid_rowconfigure(0, weight=1)
+ecg_frame.grid_rowconfigure(1, weight=3)
+#ecg_frame.grid_rowconfigure(2, weight=1)
+ecg_frame.grid_rowconfigure(3, weight=3)
+ecg_frame.grid_rowconfigure(4, weight=3)
+
 ############ DISEASE FRAME #############
 disease_frame.grid_propagate(False)
 def search(event):                                                        # search in combo
