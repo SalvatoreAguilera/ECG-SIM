@@ -16,6 +16,7 @@ from pathlib import Path
 import print_plot
 import csv
 import normal
+import os
 
 update_in_progress = False
 # FUNCTION TO GET THE NEW PARAMETERS FROM THE GUI
@@ -210,40 +211,63 @@ def on_click_update():
 
 def new_Window():
     newWindow= ttk.Window()
-    newWindow.geometry("800x675")
+    #newWindow.geometry("800x675")
+    newWindow.attributes('fullscreen', True)
     newWindow.title(combo.get())
     btn_start.config(state="disable")
     ecg_frame.grid_forget()
 
-def set_new_window(root):
-    new_ecg_width_size = 800
-    new_ecg_height_size = 600
+def set_new_window(newWindow):
+    new_ecg_width_size = newWindow.winfo_screenwidth()
+    
+    new_ecg_height_size = newWindow.winfo_screenheight()
 
-    new_frame_size_width = new_ecg_width_size * .85  # width for signal frame
+    new_hr_width_side = new_ecg_width_size * .10  # heart rate width for frame
+    new_frame_size_width = new_ecg_width_size - new_hr_width_side  # width for signal frame
     new_frame_size_height = new_ecg_height_size * .30  # height for signal frame
     new_bot_frame_size_w = new_ecg_width_size * .25  # bottom frames width
-    new_bot_frame_size_h = new_ecg_height_size * .30  # bottom frames height
-    new_hr_width_side = new_ecg_width_size * .15  # heart rate width for frame
+    new_bot_frame_size_h = new_ecg_height_size * .20  # bottom frames height
+    
+    # resize 
+    newWindow.columnconfigure(0, weight= 1)
+    newWindow.rowconfigure(0, weight = 1)
 
     # Create the main ECG frame
-    new_ecg_frame = ttk.Frame(root)
-    new_ecg_frame.grid()
+    new_ecg_frame = ttk.LabelFrame(newWindow, 
+                              width= new_ecg_width_size, 
+                              height= new_ecg_height_size)
+    new_ecg_frame.grid(row=0, column=0)
+    new_ecg_frame.grid_propagate(False)
+    new_ecg_frame.columnconfigure(0, weight=1)
+    new_ecg_frame.rowconfigure(0, weight=1)
+    #new_ecg_frame.rowconfigure(1, weight=1)
+    new_ecg_frame.rowconfigure(2, weight=1)
+    new_ecg_frame.rowconfigure(3, weight = 1)
+    new_ecg_frame.rowconfigure(4, weight=3)
+
 
     #### LEAD II FRAME AND LABEL 
     new_leadII_label = ttk.Label(new_ecg_frame, 
                                  text="LEAD II", 
                                  foreground="#84f91c")
     new_leadII_label.grid(row=0, column=0, sticky="w")
-    new_leadII_frame = ttk.Frame(new_ecg_frame, 
+    
+
+    new_leadII_frame = ttk.LabelFrame(new_ecg_frame, 
                                  height=new_frame_size_height, 
                                  width=new_frame_size_width)
+    new_leadII_frame.grid_propagate(False)
     new_leadII_frame.grid(row=1, column=0)
+    new_leadII_frame.columnconfigure(0, weight=1)
+
     # ECG Live Signal with HR
-    new_II_frame = tk.Frame(new_leadII_frame, 
+    new_II_frame = tk.LabelFrame(new_leadII_frame, 
                             height=new_frame_size_height, 
                             width=new_frame_size_width)
-    new_II_frame.grid(row=0, column=0)
-    new_HR_frame = tk.Frame(new_leadII_frame, 
+    new_II_frame.grid(row=0, column=0, sticky = 'w')
+    new_II_frame.grid_propagate(False)
+
+    new_HR_frame = tk.LabelFrame(new_leadII_frame, 
                             width=new_hr_width_side, 
                             height=100)
     new_HR_frame.grid(row=0, column=1, sticky="e")
@@ -280,13 +304,26 @@ def set_new_window(root):
                                  font=("Time", 15), 
                                  foreground="#84f91c")
     new_leadV1_label.grid(row=2, column=0, sticky="w")
-    new_leadV1_frame = ttk.Frame(new_ecg_frame, 
+    new_V1_frame = ttk.LabelFrame(new_ecg_frame, 
                                  height=new_frame_size_height, 
                                  width=new_frame_size_width)
-    new_leadV1_frame.grid(row=3, column=0, sticky="w")
+    
+    new_V1_frame.grid(row=3, column=0)
+    new_V1_frame.grid_propagate(False)
+    new_V1_frame.columnconfigure(0, weight=1)
+    
+    new_leadV1_frame = ttk.LabelFrame(new_V1_frame, 
+                                 height=new_frame_size_height, 
+                                 width=new_frame_size_width)
+    new_leadV1_frame.grid(row=0, column=0, sticky="w")
+
+    space_frame = ttk.LabelFrame(new_V1_frame, 
+                            width=new_hr_width_side, 
+                            height=100)
+    space_frame.grid(row=0, column=1, sticky="e")
     
     # Bottom frame for ECG (Pulse, awRR, TPERI)
-    new_rate_frames = ttk.Frame(new_ecg_frame, 
+    new_rate_frames = ttk.LabelFrame(new_ecg_frame, 
                                 height=new_bot_frame_size_h, 
                                 width=new_bot_frame_size_w)
     new_rate_frames.grid(row=4, column=0, columnspan=1)
@@ -350,7 +387,8 @@ def set_new_window(root):
                                                     text="--", 
                                                     font=('Arial', 50), 
                                                     fill="#84f91c")
-    
+
+
     widgets = {
     "leadII_label": new_leadII_label,
     "leadII_frame": leadII_frame,
@@ -453,8 +491,12 @@ def animation(ecg_num,widgets, copy):
     if not copy:
         print_y.extend(y)
     
+    fig_x = 6
+    fig_y = 2
+
+
     # create figure 
-    fig1, axis = plt.subplots(figsize=(6,2),facecolor="#2B3F51")                   # background of fig black
+    fig1, axis = plt.subplots(figsize=(fig_x,fig_y),facecolor="#2B3F51")                   # background of fig black
     plt.axis("off")
 
     # previous
@@ -462,7 +504,7 @@ def animation(ecg_num,widgets, copy):
     x = (1/1000)*t_p + 0.9
     y_p = np.linspace(0.9,0.9,1200)
 
-    fig2, axis2 = plt.subplots(figsize=(7,2),facecolor="#2B3F51")
+    fig2, axis2 = plt.subplots(figsize=(fig_x,fig_y),facecolor="#2B3F51")
     plt.axis("off")
 
     # function for Funcanimation 
@@ -725,6 +767,15 @@ def sim_from_to_time():
         resid_list = [x+y for x,y in zip(resid_list,resid)]
 
     y = extended_y
+
+def delete_csv_file():
+    filename = clicked_sim_menu.get()
+    if filename == '':
+        tk.messagebox.showerror("Error", "Invalid file")
+    if os.path.exists('./simulations/' + filename + '.csv'):
+        os.remove('./simulations/' + filename + '.csv')
+    else:
+        tk.messagebox.showerror("Error", "Could not delte file")
 
 ########## main window ##########
 #root = ttk.Window(themename="superhero")                       # create window
@@ -995,18 +1046,28 @@ leadII_frame.rowconfigure(1, weight=1)
 leadII_frame.columnconfigure(1,weight=5)
 
 #####
-
 leadV1_label = ttk.Label(ecg_frame, 
-                         text="V1", 
-                         font=("Time", 15),
-                         foreground="#84f91c")                        # leadV1 label
-leadV1_label.grid(row = 2, column=0, sticky="w")
-leadV1_frame= ttk.Frame(ecg_frame,
-                        width= content_w * 0.85,
-                        height= (content_h*0.3))
-leadV1_frame.grid(row =3, column=0, sticky="w")
-leadV1_frame.columnconfigure(0, weight=1)
-leadV1_frame.rowconfigure(0, weight=1)
+                            text="V1",
+                             font=("Time", 15), 
+                             foreground="#84f91c")
+leadV1_label.grid(row=2, column=0, sticky="w")
+V1_frame = ttk.Frame(ecg_frame, 
+                        height= (content_h*0.3), 
+                        width= content_w)
+V1_frame.grid_propagate(False)
+V1_frame.grid(row=3, column=0)
+V1_frame.columnconfigure(0, weight=1)
+V1_frame.rowconfigure(0, weight = 1)
+leadV1_frame = ttk.Frame(V1_frame, 
+                            height=(content_h*0.3), 
+                            width=content_w)
+leadV1_frame.grid(row=0, column=0, sticky="w")
+
+space_frame = ttk.Frame(V1_frame, 
+                            width= (content_w*0.15), 
+                            height= (content_h*0.30))
+space_frame.grid(row=0, column=1, sticky="e")
+
 
 rate_frames = ttk.Frame(ecg_frame,
                         width= content_w,
@@ -1292,6 +1353,11 @@ simulator_subframe.columnconfigure(3, weight= 3)
 
 sim_submit_button = ttk.Button(simulator_subframe, text="Submit", command=sim_from_to_time)
 sim_submit_button.grid(row= 2, column= 0)
+       
+sim_delete_button = ttk.Button(simulator_subframe, text="Delete", command=delete_csv_file)
+sim_delete_button.grid(row = 2 , column = 1)
+
+
 resize(sim_sub_frame, 3, 4)
 resize(sim_main_frame, 2, 4)
 
