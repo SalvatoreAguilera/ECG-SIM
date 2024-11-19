@@ -893,10 +893,10 @@ btn_quit.grid(row= 4, column= 0)
 
 
 
-'''icon = ttk.PhotoImage(file="ecg.png")                           # get icon
+icon = ttk.PhotoImage(file="ecg.png")                           # get icon
 icon_label = ttk.Label(dash_frame, image=icon)                  # place icon in gui
 icon_label.grid(row = 0, column= 0)               # one column for row
-'''
+
 
 title_dash = ttk.Frame(dash_frame,
                        width= dash_w,
