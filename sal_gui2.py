@@ -170,9 +170,8 @@ def new_ecg_signal():
         ecg_signal_frame.grid(row = 0, column=0, columnspan=2)
         
 def set_new_window(root):
-    new_ecg_width_size = 800
-    new_ecg_height_size = 600
-
+    new_ecg_width_size = 1600
+    new_ecg_height_size = 900
     new_frame_size_width = new_ecg_width_size * .80  # width for signal frame
     new_frame_size_height = new_ecg_height_size * .35  # height for signal frame
     new_bot_frame_size_w = new_ecg_width_size * .20  # bottom frames width
@@ -278,7 +277,7 @@ def ecg_start():
         tk.messagebox.showerror("Error", "Please Select Disease")
         return
     screen = tk.Toplevel()
-    screen.geometry("800x675")
+    screen.attributes('-fullscreen',True)
     screen.title(clicked.get())
     dict_widgets = set_new_window(screen)
     dict_widgets['window'] = screen
@@ -303,7 +302,15 @@ def ecg_start():
     ecg_frame.config(text=clicked.get())
     animation(ecg_num,widgets, False)
     animation(ecg_num,dict_widgets, True)
+    
     btn_start.config(state="normal")
+
+# resize 
+def resize(win_frame,rows, cols):
+    for i in range(rows):
+        win_frame.rowconfigure(i, weight= 1)
+    for j in range(cols):
+        win_frame.columnconfigure(j, weight= 1)
 
 print_x = []
 print_y = []
@@ -369,10 +376,12 @@ def animation(ecg_num,widgets, copy):
                 print_y.extend(y)
         if frame == len(t) - 1 and update_requested:
             y = normal.update_ecg()
+            print('before', hr)
             hr = normal.get_HR()
+            print('after', hr)
             if not copy:
                 print_y.extend(y)
-            widgets['HR_canvas'].after(100,update_rate)
+            update_rate()
             update_requested = False 
         # update the new points after each frame
         
@@ -458,6 +467,7 @@ def animation(ecg_num,widgets, copy):
             print_onECG_change()
         if 'window' in widgets:
             widgets['window'].destroy()
+            return
         else:
             animate.event_source.stop()  
             animate2.event_source.stop()
@@ -468,6 +478,7 @@ def animation(ecg_num,widgets, copy):
             widgets['pulse_canvas'].itemconfig(widgets['pulse_result'], text="")
             widgets['awRR_canvas'].itemconfig(widgets['awRR_result'], text="")
             widgets['Tperi_canvas'].itemconfig(widgets['Tperi_result'], text="")
+            return
 
         
             
@@ -707,7 +718,7 @@ btn_x_update = int((left_width/3))
 btn_update.config(width= 7)
 btn_update.place(x= btn_x_update,y = 550)
 # close window
-btn_quit = ttk.Button(left_frame, text="Exit", style="Q.TButton", command=quit)
+btn_quit = ttk.Button(left_frame, text="Exit", style="Q.TButton", command=window.quit)
 btn_x_quit = int((left_width/3))
 btn_quit.config(width= 7)
 btn_quit.place(x= btn_x_quit,y=600)

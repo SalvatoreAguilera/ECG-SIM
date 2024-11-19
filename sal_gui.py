@@ -252,6 +252,7 @@ def animation(ecg_num):
         if frame == len(t) - 1 and update_requested:
             y = normal.update_ecg()
             hr = normal.get_HR()
+            print('updated', hr)
             print_y.extend(y)
             update_rate()
             update_requested = False 
@@ -311,6 +312,7 @@ def animation(ecg_num):
         hr = hr_entry.get()
     else:
         hr = normal.get_HR()
+    print("HR: ", hr)   
     if (var_2.get()==1):
         pulse_ = pulse_entry.get()
     else:

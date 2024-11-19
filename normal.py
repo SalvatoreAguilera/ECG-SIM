@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.signal import find_peaks
 
 def p_wav(x, a_pwav, d_pwav, t_pwav, li):
     l = li
@@ -135,7 +136,7 @@ def update_ecg():
 
 #updated code to a function
 #reason: to change the haeart when the person inputs different params
-def get_HR():
+'''def get_HR():
     max_y = np.max(ecg_waveform)
     index = []
 
@@ -144,6 +145,19 @@ def get_HR():
             index.append(i)
 
     Hr = 300 / ((index[3]-index[2])/50)
+    return Hr'''
+def get_HR(sample_rate=1200):
+    # Detect peaks with find_peaks, tuning parameters if needed
+    peaks, _ = find_peaks(ecg_waveform, height=np.max(ecg_waveform) * 0.5, distance=sample_rate // 2)
+    
+    if len(peaks) > 1:
+        # Calculate time differences between successive peaks
+        rr_intervals = np.diff(peaks) / sample_rate  # in seconds
+        # Calculate heart rate (beats per minute) from average RR interval
+        Hr = 60 // np.mean(rr_intervals)
+    else:
+        Hr = 0  # In case no peaks are detected or only one peak is found
+    
     return Hr
 
 
