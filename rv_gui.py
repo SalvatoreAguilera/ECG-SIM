@@ -235,7 +235,7 @@ def set_new_window(newWindow):
     newWindow.rowconfigure(0, weight = 1)
 
     # Create the main ECG frame
-    new_ecg_frame = ttk.LabelFrame(newWindow, 
+    new_ecg_frame = ttk.Frame(newWindow, 
                               width= new_ecg_width_size, 
                               height= new_ecg_height_size)
     new_ecg_frame.grid(row=0, column=0)
@@ -255,7 +255,7 @@ def set_new_window(newWindow):
     new_leadII_label.grid(row=0, column=0, sticky="w")
     
 
-    new_leadII_frame = ttk.LabelFrame(new_ecg_frame, 
+    new_leadII_frame = ttk.Frame(new_ecg_frame, 
                                  height=new_frame_size_height, 
                                  width=new_frame_size_width)
     new_leadII_frame.grid_propagate(False)
@@ -263,13 +263,13 @@ def set_new_window(newWindow):
     new_leadII_frame.columnconfigure(0, weight=1)
 
     # ECG Live Signal with HR
-    new_II_frame = tk.LabelFrame(new_leadII_frame, 
+    new_II_frame = tk.Frame(new_leadII_frame, 
                             height=new_frame_size_height, 
                             width=new_frame_size_width)
     new_II_frame.grid(row=0, column=0, sticky = 'w')
     new_II_frame.grid_propagate(False)
 
-    new_HR_frame = tk.LabelFrame(new_leadII_frame, 
+    new_HR_frame = tk.Frame(new_leadII_frame, 
                             width=new_hr_width_side, 
                             height=100)
     new_HR_frame.grid(row=0, column=1, sticky="e")
@@ -306,7 +306,7 @@ def set_new_window(newWindow):
                                  font=("Time", 15), 
                                  foreground="#84f91c")
     new_leadV1_label.grid(row=2, column=0, sticky="w")
-    new_V1_frame = ttk.LabelFrame(new_ecg_frame, 
+    new_V1_frame = ttk.Frame(new_ecg_frame, 
                                  height=new_frame_size_height, 
                                  width=new_frame_size_width)
     
@@ -314,18 +314,18 @@ def set_new_window(newWindow):
     new_V1_frame.grid_propagate(False)
     new_V1_frame.columnconfigure(0, weight=1)
     
-    new_leadV1_frame = ttk.LabelFrame(new_V1_frame, 
+    new_leadV1_frame = ttk.Frame(new_V1_frame, 
                                  height=new_frame_size_height, 
                                  width=new_frame_size_width)
     new_leadV1_frame.grid(row=0, column=0, sticky="w")
 
-    space_frame = ttk.LabelFrame(new_V1_frame, 
+    space_frame = ttk.Frame(new_V1_frame, 
                             width=new_hr_width_side, 
                             height=100)
     space_frame.grid(row=0, column=1, sticky="e")
     
     # Bottom frame for ECG (Pulse, awRR, TPERI)
-    new_rate_frames = ttk.LabelFrame(new_ecg_frame, 
+    new_rate_frames = ttk.Frame(new_ecg_frame, 
                                 height=new_bot_frame_size_h, 
                                 width=new_bot_frame_size_w)
     new_rate_frames.grid(row=4, column=0, columnspan=1)
