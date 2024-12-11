@@ -11,11 +11,10 @@ import matplotlib.pylab as plt
 from matplotlib.widgets import Slider
 from matplotlib.animation import FuncAnimation
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg) 
-import normal
 from pathlib import Path
 import print_plot
 import csv
-import normal
+import normal1 as normal
 import os
 update_in_progress = False
 # FUNCTION TO GET THE NEW PARAMETERS FROM THE GUI
